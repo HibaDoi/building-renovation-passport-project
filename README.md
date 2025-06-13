@@ -1,4 +1,4 @@
-# Step 1: Extracting Information from Delft City CityJSON for Simulation
+## Step 1: Extracting Information from Delft City CityJSON for Simulation
 
 The first step in the simulation process is to extract relevant building data from the **CityJSON** file of Delft City. The key attributes to be extracted include information about the building's structure, roof, and volume to enable accurate simulation. The most challenging part of this step is correctly identifying and extracting the following data for each building:
 
