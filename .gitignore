@@ -1,0 +1,37 @@
+# Large data files
+*.zip
+*.rar
+*.7z
+*.tar.gz
+
+# Large datasets
+*.csv
+*.xlsx
+*.json
+
+# 3D model files (often large)
+*.obj
+*.fbx
+*.dae
+*.3ds
+*.max
+*.blend
+
+# Video/Image files
+*.mp4
+*.avi
+*.mov
+*.png
+*.jpg
+*.jpeg
+*.tiff
+*.laz
+*.LAZ
+*.las
+AixLib-main/
+IfcOpenShell-db44eaf2216cfd29bc98a18d84ef3eef55273d7d/
+ArchetypeExample/
+teaser_out/
+teaser_output/
+_1_Data_harvest/LAZ/
+post_12/

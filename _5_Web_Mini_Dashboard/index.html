@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Building Viewer</title>
+    <!-- 1. Import the CesiumJS Library -->
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.119/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.119/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        /* Make the viewer take up the whole page */
+        html, body, #cesiumContainer {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        /* Add a simple title overlay */
+        #titleOverlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(38, 38, 38, 0.75);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-family: sans-serif;
+            font-size: 24px;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div id="cesiumContainer"></div>
+    <div id="titleOverlay">Building Performance Viewer</div>
+
+    <script>
+        // --- This is the main JavaScript section ---
+
+        // 2. Set your Cesium ION Access Token
+        // IMPORTANT: Get your own free token from https://cesium.com/ion/signup/
+        // Replace 'YOUR_TOKEN_HERE' with the token you get.
+        Cesium.Ion.defaultAccessToken = 'YOUR_TOKEN_HERE';
+
+        // 3. Initialize the Cesium Viewer
+        // This creates the 3D globe in the 'cesiumContainer' div
+        const viewer = new Cesium.Viewer('cesiumContainer', {
+            terrainProvider: Cesium.createWorldTerrain() // Adds realistic 3D terrain
+        });
+        
+        // Improve visual quality
+        viewer.scene.globe.enableLighting = true;
+
+        // 4. Load your CityJSON file
+        // IMPORTANT: Replace 'your_building.cityjson' with the actual name of your file.
+        // Make sure the file is in the same folder as this HTML file.
+        const cityJsonPromise = Cesium.CityJsonDataSource.load('_2_Harmonization/IFC_converted_Cityjson/ifc_to_cityjson.json');
+
+        // 5. Add the loaded model to the viewer
+        cityJsonPromise.then(function(dataSource) {
+            viewer.dataSources.add(dataSource);
+            
+            // 6. Fly the camera to your building
+            // This makes the camera automatically zoom to your model when it loads.
+            viewer.flyTo(dataSource);
+        }).catch(function(error) {
+            // If there's an error, show it in the browser's console
+            console.error(error);
+        });
+
+    </script>
+</body>
+</html>
