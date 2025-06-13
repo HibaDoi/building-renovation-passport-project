@@ -2,7 +2,7 @@ import json
 import numpy as np
 from shapely.geometry import Polygon
 
-with open("_2_Harmonization\CityJSON/building_assigned_notextures.json") as f:
+with open("_4_Renovation_Scenario_Stub/buiding.json") as f:
     cj = json.load(f)
 
 
@@ -13,6 +13,11 @@ buildings = {
     if obj["type"] == "Building"
 }
 
+buildings_Part = {
+    obj_id: obj
+    for obj_id, obj in city_objects.items()
+    if obj["type"] == "BuildingPart"
+}
 
 # global vertex list
 vertices = np.array(cj["vertices"])  # shape (N, 3)
@@ -33,20 +38,11 @@ for b_id, b in buildings.items():
         # extract first MultiSurface footprint
     # find the first MultiSurface footprint
     footprint = None
-    for geom in b["geometry"]:
-        # pick exactly LOD2 (or whichever LOD your file uses for footprints)
-        lod = float(geom.get("lod", 0))
-        if geom["type"] != "Solid" or lod < 1.0:
-            continue
+    
+    data=city_objects[str(b_id)+"-0"]["geometry"]
+    footprint = next((building_part['boundaries'] for building_part in data if building_part['lod'] == '1.2' and any(surface['type'] == 'GroundSurface' for surface in building_part['semantics']['surfaces'])), None)
 
-        # if there’s also a “purpose” field, you can be even more explicit:
-        # if geom.get("purpose") not in ("Footprint","GroundSurface"): continue
-
-        outer_ring = geom["boundaries"][0][0]
-        coords3d   = [vertices[i] for i in outer_ring]
-        footprint  = [(float(x),float(y)) for x,y,_ in coords3d]
-        print(footprint)
-        break
+    input(footprint)
 
     out.append({
         "id":            b_id,
@@ -61,6 +57,6 @@ for b_id, b in buildings.items():
 
     })
    # write it out
-with open("for_teaser.json", "w") as f:
+with open("_4_Renovation_Scenario_Stub/for_teaser.json", "w") as f:
     json.dump(out, f, indent=2)
 
