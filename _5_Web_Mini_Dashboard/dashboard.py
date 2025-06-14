@@ -6,7 +6,7 @@ from buildingspy.io.outputfile import Reader
 st.title("🏠 Renovation Dashboard")
 
 # Charger le fichier .mat
-r = Reader("ResidentialBuilding_res.mat", "dymola")
+r = Reader("Open_modula_maybe/simulation_results/NL_Building_0503100000000010_result.mat", "dymola")
 var_names = r.varNames()
 print("First 10 variables:", var_names[:10])
 time, heat_pre  = r.values('multizone.PHeater[1]')

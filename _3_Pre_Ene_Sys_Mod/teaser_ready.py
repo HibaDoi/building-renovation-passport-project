@@ -1,6 +1,6 @@
 import json
 import math
-
+from teaser.project import Project
 def map_building_to_teaser(building_data, prj):
     """
     Map Dutch building data to TEASER add_residential parameters
@@ -215,20 +215,17 @@ def analyze_buildings_json(json_file_path):
 # prj = TEASER Project object - this is the main container for all your buildings
 
 # YOU NEED TO CREATE IT FIRST:
-from teaser.project import Project
+
 
 # Create a new TEASER project
 prj = Project()  # This creates an empty project
 prj.name = "renodat"  # Give it a name
 
-# OR if you want to load existing data:
-# prj = Project(load_data=True)
-# prj.load_project(path="path/to/existing/project")
+
 
 # COMPLETE EXAMPLE OF HOW TO USE EVERYTHING:
 
-import json
-from teaser.project import Project
+
 
 def complete_workflow_example():
     """Complete example showing how to use everything together"""
@@ -283,3 +280,4 @@ prj.calc_all_buildings()
 
 # Step 5: Export or save
 prj.export_aixlib()
+

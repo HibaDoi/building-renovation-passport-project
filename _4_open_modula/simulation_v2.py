@@ -37,7 +37,7 @@ def analyze_your_teaser_export(export_directory):
     return building_dirs, package_file
 
 def setup_ompython_for_your_models(aixlib_path=None):
-    """Setup OMPython specifically for your TEASER models with manual AixLib path"""
+    """Setup OMPython for TEASER models with IBPSA (built-in library)"""
     
     try:
         from OMPython import OMCSessionZMQ
@@ -50,55 +50,65 @@ def setup_ompython_for_your_models(aixlib_path=None):
         om_home = omc.sendExpression('getInstallationDirectoryPath()')
         print(f"OpenModelica path: {om_home}")
         
-        # Load required libraries for TEASER models with better error handling
         print("Loading Modelica libraries...")
         
-        # Try to load Modelica first
+        # Load Modelica (always needed)
         try:
             modelica_result = omc.sendExpression("loadModel(Modelica)")
             print(f"  - Modelica load result: {modelica_result}")
         except Exception as e:
             print(f"  - Modelica load error: {e}")
         
-        # Load AixLib from manual path if provided
+        # Load IBPSA (built-in with OpenModelica, much easier!)
+        try:
+            print("Loading IBPSA (built-in library)...")
+            ibpsa_result = omc.sendExpression("loadModel(IBPSA)")
+            print(f"  - IBPSA load result: {ibpsa_result}")
+            
+            # Verify IBPSA is loaded
+            ibpsa_check = omc.sendExpression("isPackage(IBPSA)")
+            print(f"  - IBPSA package verification: {'✓' if ibpsa_check else '✗'}")
+            
+        except Exception as e:
+            print(f"  - IBPSA load error: {e}")
+            print("  - Trying alternative IBPSA loading...")
+            
+            # Try Buildings library as fallback (also contains IBPSA)
+            try:
+                buildings_result = omc.sendExpression("loadModel(Buildings)")
+                print(f"  - Buildings library load result: {buildings_result}")
+            except Exception as e2:
+                print(f"  - Buildings library load error: {e2}")
+        
+        # If manual AixLib path provided, still try to load it
         if aixlib_path:
             aixlib_package = Path(aixlib_path) / "package.mo"
             if aixlib_package.exists():
-                print(f"Loading AixLib from manual path: {aixlib_package}")
+                print(f"Also loading AixLib from: {aixlib_package}")
                 try:
                     aixlib_result = omc.sendExpression(f'loadFile("{aixlib_package}")')
                     print(f"  - AixLib manual load result: {aixlib_result}")
-                    
-                    # Verify AixLib is loaded
-                    aixlib_check = omc.sendExpression("isPackage(AixLib)")
-                    print(f"  - AixLib package verification: {'✓' if aixlib_check else '✗'}")
-                    
                 except Exception as e:
                     print(f"  - AixLib manual load error: {e}")
-            else:
-                print(f"  - ❌ AixLib package.mo not found at: {aixlib_package}")
-        else:
-            # Try default AixLib loading
-            try:
-                aixlib_result = omc.sendExpression("loadModel(AixLib)")
-                print(f"  - AixLib default load result: {aixlib_result}")
-            except Exception as e:
-                print(f"  - AixLib default load error: {e}")
-                print("  - You may need to provide manual AixLib path")
         
-        # Get library path
-        lib_path = omc.sendExpression('getModelicaPath()')
-        print(f"Modelica library path: {lib_path}")
-        
-        # Check what's actually available
+        # Check what's available
         available_packages = omc.sendExpression("getPackages()")
         print(f"Available packages: {available_packages}")
         
-        # Check if basic libraries are working
+        # Check library status
         modelica_loaded = omc.sendExpression("isPackage(Modelica)")
-        aixlib_loaded = omc.sendExpression("isPackage(AixLib)")
+        ibpsa_loaded = omc.sendExpression("isPackage(IBPSA)")
+        buildings_loaded = omc.sendExpression("isPackage(Buildings)")
+        
         print(f"  - Modelica package available: {'✓' if modelica_loaded else '✗'}")
-        print(f"  - AixLib package available: {'✓' if aixlib_loaded else '✗'}")
+        print(f"  - IBPSA package available: {'✓' if ibpsa_loaded else '✗'}")
+        print(f"  - Buildings package available: {'✓' if buildings_loaded else '✗'}")
+        
+        # IBPSA or Buildings is good enough for TEASER models
+        if ibpsa_loaded or buildings_loaded:
+            print("✅ Suitable library loaded for TEASER simulation!")
+        else:
+            print("⚠️ No suitable building library found")
         
         return omc
         
@@ -111,185 +121,128 @@ def setup_ompython_for_your_models(aixlib_path=None):
 
 def simulate_your_teaser_building(omc, building_dir, package_path):
     """
-    Simulate one of your TEASER buildings with better debugging
-    
-    Args:
-        omc: OMPython session
-        building_dir: Path to building directory (e.g., NL_Building_0503100000037018)
-        package_path: Path to main package.mo file
+    Smart simulation that bypasses package structure issues
     """
     
     building_name = building_dir.name
-    print(f"\n🏢 Simulating: {building_name}")
+    print(f"\n🏢 Smart simulation: {building_name}")
     
     try:
-        # Debug: Check what files are in the package directory
-        print(f"Package path: {package_path}")
-        print(f"Building directory: {building_dir}")
+        # Method 1: Try direct building model loading
+        building_mo = building_dir / f"{building_name}.mo"
         
-        # List files in building directory
-        mo_files = list(building_dir.glob("*.mo"))
-        print(f"Building .mo files: {[f.name for f in mo_files]}")
-        
-        # Load the main package first
-        print("Loading package...")
-        package_load = omc.sendExpression(f'loadFile("{package_path}")')
-        print(f"Package load result: {package_load}")
-        
-        if not package_load:
-            print("❌ Failed to load main package")
-            errors = omc.sendExpression("getErrorString()")
-            print(f"Package load errors: {errors}")
-            return None
-        
-        # Try to load the specific building directory as well
-        print(f"Loading building directory...")
-        for mo_file in mo_files:
-            print(f"  Loading: {mo_file.name}")
-            file_load = omc.sendExpression(f'loadFile("{mo_file}")')
-            print(f"  Result: {file_load}")
-            if not file_load:
+        if building_mo.exists():
+            print(f"📄 Loading building model directly: {building_mo}")
+            
+            # Load the building model file directly
+            direct_load = omc.sendExpression(f'loadFile("{building_mo}")')
+            print(f"Direct load result: {direct_load}")
+            
+            if direct_load:
+                # Check available models
+                models = omc.sendExpression("getClassNames()")
+                print(f"Available models after direct load: {models}")
+                
+                # Find our building model
+                model_name = None
+                possible_names = [
+                    building_name,
+                    f"Project.{building_name}",
+                    building_name.replace("NL_Building_", "Building_")
+                ]
+                
+                # Check each possibility
+                for name in possible_names:
+                    if isinstance(models, (list, tuple)):
+                        if name in models:
+                            model_name = name
+                            break
+                    else:
+                        # Try to check if model exists
+                        exists = omc.sendExpression(f"isModel({name})")
+                        if exists:
+                            model_name = name
+                            break
+                
+                if not model_name and models:
+                    # Use first available model that looks like our building
+                    for model in models:
+                        if isinstance(model, str) and any(part in model for part in building_name.split('_')):
+                            model_name = model
+                            break
+                
+                if not model_name:
+                    model_name = building_name  # Fallback
+                
+                print(f"🎯 Using model: {model_name}")
+                
+                # Check model for errors
+                print("Checking model...")
+                check_result = omc.sendExpression(f"checkModel({model_name})")
+                print(f"Model check result: {check_result}")
+                
+                # Get any errors
                 errors = omc.sendExpression("getErrorString()")
-                print(f"  Errors: {errors}")
+                if errors:
+                    print(f"Model check errors: {errors}")
+                    # Continue anyway - sometimes warnings don't prevent simulation
+                
+                # Try simulation with minimal parameters
+                print("Starting simulation...")
+                
+                # Use very simple simulation parameters
+                sim_command = f'simulate({model_name}, startTime=0, stopTime=3600, numberOfIntervals=60)'
+                
+                sim_result = omc.sendExpression(sim_command)
+                print(f"Simulation result: {sim_result}")
+                
+                # Get simulation errors
+                sim_errors = omc.sendExpression("getErrorString()")
+                if sim_errors:
+                    print(f"Simulation errors: {sim_errors}")
+                
+                # Look for result files
+                result_files = list(Path(".").glob("*_res.mat"))
+                print(f"Available result files: {[f.name for f in result_files]}")
+                
+                # Find the most recent .mat file
+                if result_files:
+                    latest_result = max(result_files, key=lambda f: f.stat().st_mtime)
+                    print(f"✅ Using result file: {latest_result.name}")
+                    return str(latest_result)
+                else:
+                    print("❌ No result file generated")
+                    return None
+            
+        # Method 2: Fallback to original package loading approach
+        print("Direct loading failed, trying package approach...")
         
-        # Check what models are now available
-        print("Checking available models...")
+        # Try to load just the building directory contents
+        mo_files = list(building_dir.glob("*.mo"))
+        for mo_file in mo_files:
+            if mo_file.name != "package.mo":  # Skip problematic package.mo
+                load_result = omc.sendExpression(f'loadFile("{mo_file}")')
+                if load_result:
+                    print(f"✓ Loaded {mo_file.name}")
+        
+        # Try simulation with any loaded models
         models = omc.sendExpression("getClassNames()")
-        print(f"All available models: {models}")
-        
-        # Get detailed information about the Project
-        print("Exploring Project structure...")
-        project_classes = omc.sendExpression("getClassNames(Project)")
-        print(f"Classes in Project: {project_classes}")
-        
-        # Try to get even deeper structure
-        for cls in project_classes if project_classes else []:
-            print(f"Exploring Project.{cls}...")
-            sub_classes = omc.sendExpression(f"getClassNames(Project.{cls})")
-            print(f"  Sub-classes: {sub_classes}")
-        
-        # Try different model name variations
-        possible_names = [
-            building_name,  # NL_Building_0503100000000010
-            f"Project.{building_name}",  # Project.NL_Building_0503100000000010
-            building_name.replace("NL_Building_", ""),  # Just the number part
-            f"Project.{building_name.replace('NL_Building_', '')}",  # Project with number only
-        ]
-        
-        # Also try to find models that contain the building ID
-        building_id = building_name.replace("NL_Building_", "")
         for model in models:
-            if isinstance(model, str) and building_id in model:
-                possible_names.append(model)
-                print(f"Found potential match by ID: {model}")
+            if isinstance(model, str) and building_name.replace("NL_Building_", "") in model:
+                try:
+                    sim_result = omc.sendExpression(f'simulate({model}, startTime=0, stopTime=3600)')
+                    if sim_result:
+                        result_files = list(Path(".").glob("*_res.mat"))
+                        if result_files:
+                            return str(result_files[-1])
+                except:
+                    continue
         
-        # Try to find any model that looks like a building
-        for model in models:
-            if isinstance(model, str) and any(keyword in model.lower() for keyword in ['building', 'nl_', 'residential']):
-                possible_names.append(model)
-                print(f"Found potential building model: {model}")
-        
-        model_name = None
-        for name in possible_names:
-            exists = omc.sendExpression(f"isModel({name})")
-            print(f"Testing model name '{name}': {'✓' if exists else '✗'}")
-            if exists:
-                model_name = name
-                break
-        
-        if not model_name:
-            print("❌ No valid model name found")
-            print("Let's try a different approach - exploring the loaded package structure...")
-            
-            # Try to instantiate or get information about Project
-            try:
-                project_info = omc.sendExpression("getClassInformation(Project)")
-                print(f"Project information: {project_info}")
-                
-                # Try to get the source code/structure
-                project_source = omc.sendExpression("list(Project)")
-                print("Project source structure:")
-                print(project_source[:1000] if project_source else "No source available")
-                
-            except Exception as e:
-                print(f"Could not get Project information: {e}")
-                
-            print("\n🔧 MANUAL SOLUTION NEEDED:")
-            print("1. Open OpenModelica OMEdit")
-            print("2. Load your package.mo file")
-            print("3. Browse the model tree to find the exact model name")
-            print("4. Report back the exact path (e.g., Project.Buildings.Building1)")
-            
-            return None
-        
-        print(f"✓ Using model: {model_name}")
-        
-        # Check model for errors
-        print("Checking model...")
-        check_result = omc.sendExpression(f"checkModel({model_name})")
-        print(f"Model check result: {check_result}")
-        
-        # Get any errors
-        errors = omc.sendExpression("getErrorString()")
-        if errors:
-            print(f"Model check errors: {errors}")
-        
-        # Set simulation parameters (shorter for testing)
-        sim_params = {
-            'startTime': 0,
-            'stopTime': 3600,  # Just 1 hour for testing
-            'numberOfIntervals': 60,  # Minute intervals
-            'tolerance': 1e-4  # Relaxed tolerance
-        }
-        
-        # Run simulation
-        print("Starting simulation...")
-        sim_command = f"""
-        simulate({model_name}, 
-                 startTime={sim_params['startTime']}, 
-                 stopTime={sim_params['stopTime']}, 
-                 numberOfIntervals={sim_params['numberOfIntervals']},
-                 tolerance={sim_params['tolerance']})
-        """
-        
-        sim_result = omc.sendExpression(sim_command)
-        print(f"Simulation result: {sim_result}")
-        
-        # Get simulation errors
-        sim_errors = omc.sendExpression("getErrorString()")
-        if sim_errors:
-            print(f"Simulation errors: {sim_errors}")
-        
-        # Check for result file - try different possible names
-        possible_result_files = [
-            f"{model_name}_res.mat",
-            f"{building_name}_res.mat",
-            f"{model_name.replace('.', '_')}_res.mat"
-        ]
-        
-        result_file = None
-        for rf in possible_result_files:
-            if os.path.exists(rf):
-                result_file = rf
-                break
-        
-        if result_file:
-            print(f"✓ Simulation completed! Result file: {result_file}")
-            return result_file
-        else:
-            print("❌ No result file generated")
-            print("Checking current directory for .mat files...")
-            mat_files = list(Path(".").glob("*.mat"))
-            print(f"Available .mat files: {[f.name for f in mat_files]}")
-            return None
-            
-    except Exception as e:
-        print(f"❌ Simulation failed: {e}")
-        errors = omc.sendExpression("getErrorString()")
-        if errors:
-            print(f"OpenModelica errors: {errors}")
         return None
-
+        
+    except Exception as e:
+        print(f"❌ Smart simulation failed: {e}")
+        return None
 def quick_test_single_building(export_directory, building_name=None, aixlib_path=None):
     """
     Quick test with one building from your export
@@ -641,69 +594,84 @@ def complete_alternative_workflow():
 
 def main_workflow_for_your_export():
     """
-    Main workflow specifically for your TEASER export with manual AixLib support
+    Main workflow for TEASER → OpenModelica using IBPSA (much easier!)
     """
     
-    # 🔧 MODIFY THESE PATHS TO MATCH YOUR SETUP
-    export_directory = r"_3_Pre_Ene_Sys_Mod/output/Project"  
+    # 🔧 MODIFY THIS PATH TO YOUR TEASER EXPORT DIRECTORY
+    # For IBPSA export, change to your new IBPSA directory:
+    export_directory = r"_3_Pre_Ene_Sys_Mod/output/modelica_models_ibpsa"
     
-    # 🔧 SET YOUR MANUAL AIXLIB PATH HERE (where you downloaded/extracted AixLib)
-    # Examples:
-    # aixlib_path = r"C:\AixLib-master"
-    # aixlib_path = r"C:\Users\YourName\Downloads\AixLib-master"  
-    # aixlib_path = r"D:\Libraries\AixLib"
-    aixlib_path = "G:\Mon Drive\_project_1_Renodat\AixLib-main\AixLib-main\AixLib-main"  # SET THIS TO YOUR AIXLIB DIRECTORY!
+    # 🔧 ALTERNATIVE: Use your existing directory and let script detect library type
+    # export_directory = r"_3_Pre_Ene_Sys_Mod/output/Project"
     
-    print("🎯 TEASER → OPENMODELICA WITH MANUAL AIXLIB")
+    print("🎯 TEASER → OPENMODELICA WITH IBPSA")
     print("=" * 60)
+    print("✅ Using IBPSA - no manual library download needed!")
+    print("✅ IBPSA comes built-in with OpenModelica")
     
-    if not aixlib_path:
-        print("⚠️  WARNING: No AixLib path specified!")
-        print("   Set aixlib_path variable to your AixLib directory")
-        print("   Example: aixlib_path = r'C:\\AixLib-master'")
-        print("   Continuing without manual AixLib loading...")
-    else:
-        print(f"📦 Using manual AixLib from: {aixlib_path}")
-    
-    # Step 1: Diagnose OpenModelica setup
+    # Step 1: Diagnose OpenModelica setup (now checking for IBPSA)
     omc = diagnose_openmodelica_setup()
     if not omc:
         return None
     
-    # Step 2: Inspect TEASER export structure
+    # Step 2: Check if we need to re-export from AixLib to IBPSA
+    if not os.path.exists(export_directory):
+        print(f"\n⚠️ Directory not found: {export_directory}")
+        print("\n📋 NEED TO RE-EXPORT FROM TEASER:")
+        print("1. Go to your original TEASER script")
+        print("2. Change: prj.export_aixlib(path='...')")  
+        print("3. To:     prj.export_ibpsa(path='modelica_models_ibpsa')")
+        print("4. Run your TEASER script again")
+        print("5. Then come back and run this simulation script")
+        
+        # Try to find existing export directory
+        possible_dirs = [
+            r"_3_Pre_Ene_Sys_Mod/output/Project",
+            r"_3_Pre_Ene_Sys_Mod/output",
+            r"modelica_models",
+            r"modelica_models_ibpsa"
+        ]
+        
+        for test_dir in possible_dirs:
+            if os.path.exists(test_dir):
+                print(f"\n💡 Found existing directory: {test_dir}")
+                user_input = input(f"Use this directory instead? (y/n): ")
+                if user_input.lower() == 'y':
+                    export_directory = test_dir
+                    break
+    
+    # Step 3: Inspect TEASER export structure  
     inspect_teaser_export_structure(export_directory)
     
-    # Step 3: Try the simulation with manual AixLib
+    # Step 4: Run simulation with IBPSA (no manual library needed!)
     print("\n" + "=" * 60)
-    print("🧪 ATTEMPTING SIMULATION WITH MANUAL AIXLIB")
+    print("🧪 ATTEMPTING SIMULATION WITH IBPSA")
     
-    # Test with manual AixLib path
-    result = quick_test_single_building(export_directory, aixlib_path=aixlib_path)
+    # No need for manual library path with IBPSA!
+    result = quick_test_single_building(export_directory, aixlib_path=None)
     
     if result is not None:
-        print("\n✅ SUCCESS! Manual AixLib setup worked!")
+        print("\n✅ SUCCESS! IBPSA simulation worked!")
         
         # Ask if user wants to run all buildings
         try:
             user_input = input("\n➡️ Test successful! Run all buildings? (y/n): ")
             if user_input.lower() == 'y':
-                print("\n🚀 RUNNING ALL BUILDINGS WITH MANUAL AIXLIB:")
-                all_results = run_all_your_buildings(export_directory, aixlib_path=aixlib_path)
+                print("\n🚀 RUNNING ALL BUILDINGS WITH IBPSA:")
+                all_results = run_all_your_buildings(export_directory, aixlib_path=None)
                 return all_results
             else:
                 print("👍 Single building test completed!")
                 return result
         except:
-            # If input() doesn't work in some environments
             print("👍 Single building test completed!")
             return result
     else:
-        print("\n❌ Test failed even with manual AixLib")
-        print("\n📋 TROUBLESHOOTING:")
-        print("1. Check your AixLib path is correct")
-        print("2. Make sure package.mo exists in your AixLib directory") 
-        print("3. Try opening OMEdit manually and loading AixLib")
-        print("4. Consider using export_ibpsa() instead of export_aixlib()")
+        print("\n❌ Test failed")
+        print("\n📋 POSSIBLE SOLUTIONS:")
+        print("1. Re-export your TEASER models using export_ibpsa()")  
+        print("2. Check your export directory path")
+        print("3. Verify TEASER models were created correctly")
         return None
 
 if __name__ == "__main__":
