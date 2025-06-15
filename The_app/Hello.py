@@ -255,9 +255,5 @@ else:  # Resources section
 # Footer
 st.markdown("---")
 st.markdown("""
-<div style="text-align: center; color: #666; padding: 2rem;">
-    <strong>Application Deadline:</strong> June 15, 2025 | 
-    <strong>Contact:</strong> Dr. Giorgio Agugiaro (g.agugiaro@tudelft.nl) | 
-    <strong>Institution:</strong> TU Delft - 3D Geoinformation Group
-</div>
+
 """, unsafe_allow_html=True)
