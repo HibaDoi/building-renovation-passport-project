@@ -1,0 +1,9 @@
+streamlit>=1.35            # évidemment
+geopandas==0.14.3          # wheel « lite », donc pas besoin de GDAL
+matplotlib>=3.9
+pydeck==0.8.1b0
+pandas
+numpy
+shapely>=2.0
+pyproj>=3.7
+fiona>=1.9
