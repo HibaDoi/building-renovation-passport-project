@@ -292,8 +292,16 @@ class TeaserSimulatorImproved:
     
     def simulate_building(self, model_name: str) -> Tuple[bool, str]:
         """Simule un bâtiment avec gestion améliorée des chemins"""
+
+
         try:
             building_id = model_name.split('.')[-1]
+                                # --- Sauter la simulation si un résultat existe déjà -------------------
+            existing = self.output_dir / f"{building_id}_result.mat"
+            if existing.exists():
+                self.logger.info(f"⏩  Résultat déjà présent pour {building_id} – simulation ignorée")
+                return True, "Existe déjà"
+            # ----------------------------------------------------------------------
             
             self.logger.info(f"🚀 Simulation {building_id}...")
             

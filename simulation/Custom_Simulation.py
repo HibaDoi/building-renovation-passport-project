@@ -1,4 +1,4 @@
-from simulation_script import BuildingEnergySimulator
+from simulation.simulation_script import BuildingEnergySimulator
 
 # Initialize
 simulator = BuildingEnergySimulator()
