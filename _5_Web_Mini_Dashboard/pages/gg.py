@@ -17,12 +17,13 @@ if selected_file:
 
     # 2️⃣ Load .mat file
     r = Reader(file_path, "dymola")
-    # After r = Reader(file_path, "dymola")
-    all_vars = r.varNames()        # returns a Python list
-    st.write(f"{len(all_vars)} variables found")
-    st.write(all_vars)        # show the first 40 to keep the page short
+    # # After r = Reader(file_path, "dymola")
+    # all_vars = r.varNames()        # returns a Python list
+    # st.write(f"{len(all_vars)} variables found")
+    # st.write(all_vars)        # show the first 40 to keep the page short
     try:
         time, heat_pre = r.values('multizone.PHeater[1]')
+        
 
         # Convert seconds to months
         seconds_per_year  = 365 * 24 * 3600
@@ -44,6 +45,29 @@ if selected_file:
         ax.grid(True)
         st.pyplot(fig)
 
+        ################################################################
+        
+        time1,cool_pre1=r.values('multizone.TAir[1]')
+        print(cool_pre1)
+        # Convert seconds to months
+        seconds_per_year  = 365 * 24 * 3600
+        seconds_per_month = seconds_per_year / 12.0
+        time_months       = time1 / seconds_per_month
+
+        # Plot heating power over months
+        fig, ax = plt.subplots(figsize=(10, 4))
+        ax.plot(time_months, cool_pre1, label="Indoor Air Temperature")
+        ax.set_xticks(np.arange(1, 13))
+        ax.set_xticklabels([
+            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+        ])
+        ax.set_xlabel("Month")
+        ax.set_ylabel("Indoor Air Temperature (°C)")
+        ax.set_title("Indoor Air Temperature (Pre-Renovation)")
+        ax.legend()
+        ax.grid(True)
+        st.pyplot(fig)
 
 
     except Exception as e:
