@@ -5,7 +5,7 @@ import os
 import json
 import matplotlib.pyplot as plt
 import numpy as np
-
+import fiona, geopandas as gpd, streamlit as st
 st.write("Fiona version :", fiona.__version__)
 st.write("GeoPandas version :", gpd.__version__)
 # Set page configuration
