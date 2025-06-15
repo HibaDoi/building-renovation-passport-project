@@ -5,6 +5,9 @@ import os
 import json
 import matplotlib.pyplot as plt
 import numpy as np
+
+st.write("Fiona version :", fiona.__version__)
+st.write("GeoPandas version :", gpd.__version__)
 # Set page configuration
 st.set_page_config(
     page_title="Building Map Dashboard",
