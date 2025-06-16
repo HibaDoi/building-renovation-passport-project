@@ -29,6 +29,8 @@ bucket = client.bucket("renodat")
 file_path = "shpp/u.shp"  # Replace with your actual file path
 blob = bucket.blob(file_path)
 st.write("blooooooooooob:", blob)
+if blob.exists():
+    print("File exists!")
 def load_shapefile_from_gcs():
     """Load shapefile directly from Google Cloud Storage using Streamlit secrets"""
     
