@@ -7,8 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import fiona
 from google.cloud import storage
-from google.oauth2 import service_account  # Fixed import
-import tempfile
+from google.oauth2 import service_account
 
 # Set page configuration
 st.set_page_config(
@@ -21,7 +20,7 @@ st.write("Fiona version:", fiona.__version__)
 st.write("GeoPandas version:", gpd.__version__)
 
 def load_shapefile_from_gcs():
-    """Load shapefile from Google Cloud Storage using Streamlit secrets"""
+    """Load shapefile directly from Google Cloud Storage using Streamlit secrets"""
     
     try:
         # Create credentials from Streamlit secrets
@@ -31,43 +30,21 @@ def load_shapefile_from_gcs():
         
         # Initialize GCS client
         client = storage.Client(credentials=credentials)
-        bucket = client.bucket("renodat")
         
-        # Create temporary directory
-        temp_dir = tempfile.mkdtemp()
+        # Read shapefile directly from GCS using the gs:// protocol
+        gcs_path = "gs://renodat/shpp/u.shp"
         
-        # Download all shapefile components
-        extensions = ['.shp', '.shx', '.dbf', '.prj', '.cpg', '.qmd']
-        downloaded_files = []
+        st.write("📥 Reading shapefile directly from Google Cloud Storage...")
         
-        st.write("📥 Downloading shapefile components...")
-        progress_bar = st.progress(0)
+        # Read the shapefile directly from GCS
+        gdf = gpd.read_file(gcs_path, storage_options={'token': credentials})
         
-        for i, ext in enumerate(extensions):
-            blob_name = f"shpp/u{ext}"
-            blob = bucket.blob(blob_name)
-            
-            if blob.exists():
-                local_path = os.path.join(temp_dir, f"u{ext}")
-                blob.download_to_filename(local_path)
-                downloaded_files.append(local_path)
-                st.write(f"✅ Downloaded: {blob_name}")
-            
-            progress_bar.progress((i + 1) / len(extensions))
-        
-        # Read the shapefile
-        shp_file = os.path.join(temp_dir, "u.shp")
-        
-        if os.path.exists(shp_file):
-            gdf = gpd.read_file(shp_file)
-            st.success(f"✅ Successfully loaded shapefile with {len(gdf)} features")
-            return gdf
-        else:
-            st.error("❌ Shapefile (.shp) not found")
-            return None
+        st.success(f"✅ Successfully loaded shapefile with {len(gdf)} features")
+        return gdf
             
     except Exception as e:
         st.error(f"❌ Error loading shapefile: {e}")
+        st.error("Make sure all shapefile components (.shp, .shx, .dbf, .prj) exist in the GCS bucket")
         return None
 
 def load_building_info(json_file_path):
