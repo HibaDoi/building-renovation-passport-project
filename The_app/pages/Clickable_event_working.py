@@ -145,6 +145,8 @@ def main():
             # Initialize session state
             if 'selected_building_id' not in st.session_state:
                 st.session_state.selected_building_id = None
+            if 'selected_building_number' not in st.session_state:
+                st.session_state.selected_building_number = None
         
             st.header("🗺️ Interactive Map - All Buildings")
             st.markdown("**Click on any building to see simulation availability**")
@@ -297,6 +299,9 @@ def main():
                 # Update session state
                 if clicked_building_id:
                     st.session_state.selected_building_id = clicked_building_id
+                    # Extract the building number for simulation plotting
+                    building_number = clicked_building_id.replace('NL.IMBAG.Pand.', '')
+                    st.session_state.selected_building_number = building_number
                     st.rerun()
         
             except ImportError:
@@ -309,6 +314,7 @@ def main():
             
             if st.session_state.selected_building_id:
                 building_id = st.session_state.selected_building_id
+                building_number = st.session_state.selected_building_number
                 
                 # Get building data
                 selected_building = gdf[gdf['object_id_clean'] == building_id]
@@ -318,6 +324,7 @@ def main():
                     has_simulation = building_data['has_simulation']
                     
                     st.markdown(f"### 🏢 Building: `{building_id}`")
+                    st.markdown(f"**Building Number:** `{building_number}`")
                     
                     # Simulation status with prominent display
                     if has_simulation:
@@ -325,16 +332,25 @@ def main():
                         st.markdown("This building has energy simulation data!")
                         
                         # Find the simulation file
-                        building_id_short = building_id.replace('NL.IMBAG.Pand.', '')
-                        mat_file_pattern = f"NL_Building_{building_id_short}_result.mat"
+                        mat_file_pattern = f"NL_Building_{building_number}_result.mat"
                         matching_files = [f for f in mat_files if f.endswith(mat_file_pattern)]
                         
                         if matching_files:
                             st.info(f"📁 **File:** `{matching_files[0]}`")
                             
+                            # Add simulation plotting functionality
+                            if st.button("📊 Plot Simulation Graph", key="plot_sim_btn"):
+                                st.session_state.plot_simulation = True
+                                st.session_state.sim_building_number = building_number
+                                st.balloons()
+                                st.success(f"🎯 Ready to plot simulation for building {building_number}!")
+                            
                             if st.button("🚀 Analyze Energy Data", key="analyze_btn"):
                                 st.balloons()
                                 st.success("Ready for energy analysis! 🎯")
+                        else:
+                            st.warning(f"⚠️ Expected file `{mat_file_pattern}` not found in simulation files")
+                            
                     else:
                         st.error("❌ **NO SIMULATION AVAILABLE**")
                         st.markdown("This building does not have energy simulation data.")
@@ -396,6 +412,8 @@ def main():
                     # Clear selection button
                     if st.button("🗑️ Clear Selection", key="clear_btn"):
                         st.session_state.selected_building_id = None
+                        st.session_state.selected_building_number = None
+                        st.session_state.plot_simulation = False
                         st.rerun()
                         
             else:
@@ -411,10 +429,40 @@ def main():
                     st.markdown("### 🏢 Buildings with Simulations (Sample)")
                     sample_buildings = gdf[gdf['has_simulation']]['object_id_clean'].head(5).tolist()
                     for i, building in enumerate(sample_buildings, 1):
-                        st.write(f"{i}. `{building}`")
+                        building_num = building.replace('NL.IMBAG.Pand.', '')
+                        st.write(f"{i}. `{building}` → Number: `{building_num}`")
                     
                     if buildings_with_sim > 5:
                         st.write(f"... and {buildings_with_sim - 5} more")
+        
+        # Add simulation plotting section
+        if 'plot_simulation' in st.session_state and st.session_state.plot_simulation:
+            st.markdown("---")
+            st.header("📊 Simulation Graph")
+            
+            building_num = st.session_state.sim_building_number
+            st.markdown(f"### 🔥 Energy Analysis for Building `{building_num}`")
+            
+            # Here you can add your plotting code using the building_num
+            st.info(f"Building Number for Simulation: **{building_num}**")
+            st.write("You can now use this building number to:")
+            st.write(f"- Load file: `NL_Building_{building_num}_result.mat`")
+            st.write(f"- Plot energy consumption graphs")
+            st.write(f"- Analyze heating/cooling data")
+            
+            # Placeholder for your actual plotting code
+            st.code(f"""
+# Use this building number in your simulation code:
+building_number = "{building_num}"
+mat_file = f"NL_Building_{{building_number}}_result.mat"
+
+# Your plotting code here...
+# Load the .mat file and create graphs
+            """, language="python")
+            
+            if st.button("❌ Close Graph Section"):
+                st.session_state.plot_simulation = False
+                st.rerun()
     
     except Exception as e:
         st.error(f"❌ **Application Error:** {str(e)}")
