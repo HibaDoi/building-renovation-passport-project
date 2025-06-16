@@ -140,7 +140,8 @@ def load_shapefile_from_gcs(bucket_name, blob_prefix):
 #         return [], []
 
 def load_json_from_gcs(bucket_name, blob_name):
-    client = storage.Client()
+    st.write("i am here")
+    client = storage.Client(credentials=credentials)
     bucket = client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
     
