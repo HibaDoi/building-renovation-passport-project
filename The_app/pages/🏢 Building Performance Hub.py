@@ -36,10 +36,20 @@ mat_blobs = client.list_blobs(
 # 🎨 Custom CSS for beautiful styling
 st.markdown("""
 <style>
-    /* Main background */
-    .main {
+    /* Force main background */
+    .stApp {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 0rem 1rem;
+    }
+    
+    /* Main content area */
+    .main .block-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1rem;
+    }
+    
+    /* Override any white backgrounds */
+    .stApp > header {
+        background: transparent;
     }
     
     /* Custom container */
@@ -61,15 +71,20 @@ st.markdown("""
         color: white;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         margin-bottom: 1rem;
-        background: linear-gradient(45deg, #fff, #e8f4ff);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+    }
+    
+    /* Regular text styling */
+    .stMarkdown, .stMarkdown p, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4 {
+        color: black !important;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 0.5rem;
+        border-radius: 8px;
+        margin: 0.25rem 0;
     }
     
     /* Metric cards - smaller */
     .metric-card-small {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.9);
         border-radius: 10px;
         padding: 1rem;
         margin: 0.25rem;
@@ -87,24 +102,24 @@ st.markdown("""
     .metric-value-small {
         font-size: 1.8rem;
         font-weight: bold;
-        color: #fff;
+        color: #333;
         margin: 0.25rem 0;
     }
     
     .metric-label-small {
         font-size: 0.85rem;
-        color: rgba(255, 255, 255, 0.8);
+        color: #666;
         text-transform: uppercase;
     }
     
     /* Compact info box */
     .info-box-compact {
-        background: linear-gradient(135deg, #74b9ff, #0984e3);
-        color: white;
+        background: rgba(255, 255, 255, 0.95);
+        color: #333;
         padding: 0.75rem;
         border-radius: 8px;
         margin: 0.5rem 0;
-        border-left: 4px solid #fff;
+        border-left: 4px solid #667eea;
         font-size: 0.9rem;
     }
     
@@ -128,6 +143,20 @@ st.markdown("""
     
     .stTabs [aria-selected="true"] {
         background-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Dataframe styling */
+    .stDataFrame {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    
+    /* Make sure charts have proper background */
+    .js-plotly-plot {
+        background: rgba(255, 255, 255, 0.95) !important;
+        border-radius: 8px;
+        padding: 0.5rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -177,7 +206,7 @@ def load_building_data(file_path):
             'max_power': heat_power.max(),
             'avg_power': heat_power.mean(),
             'min_power': heat_power.min(),
-            'annual_consumption': np.trapz(heat_power, time) / 3600 / 1000,
+            'annual_consumption': np.trapezoid(heat_power, time) / 3600 / 1000,
             'max_temp': indoor_temp.max(),
             'avg_temp': indoor_temp.mean(),
             'min_temp': indoor_temp.min(),
@@ -262,7 +291,7 @@ with st.sidebar:
 # Main dashboard content
 if selected_files:
     
-    # Loaddata for all selected buildings
+    # Load data for all selected buildings
     building_data = {}
     building_stats = {}
     
