@@ -678,8 +678,46 @@ if selected_files:
                         color_continuous_scale=['#E8F4FD', '#4A90E2']
                     )
                     
-                    layout = get_plot_layout('Temperature vs Power Correlation', chart_height)
-                    fig_scatter.update_layout(**layout)
+                    # Update layout for Plotly Express figure
+                    fig_scatter.update_layout(
+                        height=chart_height,
+                        paper_bgcolor='white',
+                        plot_bgcolor='white',
+                        font=dict(color='#2C3E50', size=12, family='Arial, sans-serif'),
+                        title=dict(
+                            font=dict(size=18, color='#2C3E50', family='Arial, sans-serif'),
+                            x=0.5,
+                            xanchor='center'
+                        ),
+                        legend=dict(
+                            bgcolor='rgba(255,255,255,0.9)',
+                            bordercolor='#DEE2E6',
+                            borderwidth=1,
+                            font=dict(color='#2C3E50')
+                        ),
+                        hoverlabel=dict(
+                            bgcolor='white',
+                            font_size=14,
+                            font_family="Arial, sans-serif",
+                            font_color='#2C3E50',
+                            bordercolor='#DEE2E6'
+                        )
+                    )
+                    
+                    # Update axes separately
+                    fig_scatter.update_xaxes(
+                        gridcolor='#E9ECEF' if show_grid else 'rgba(0,0,0,0)',
+                        zerolinecolor='#DEE2E6',
+                        tickfont=dict(color='#2C3E50'),
+                        titlefont=dict(color='#2C3E50')
+                    )
+                    fig_scatter.update_yaxes(
+                        gridcolor='#E9ECEF' if show_grid else 'rgba(0,0,0,0)',
+                        zerolinecolor='#DEE2E6',
+                        tickfont=dict(color='#2C3E50'),
+                        titlefont=dict(color='#2C3E50')
+                    )
+                    
                     fig_scatter.update_traces(marker=dict(size=8, opacity=0.7))
                     
                     st.plotly_chart(fig_scatter, use_container_width=True)
@@ -1198,8 +1236,45 @@ if selected_files:
                         )
                     )
                     
-                    layout = get_plot_layout('', chart_height)
-                    fig_corr.update_layout(**layout)
+                    # Update layout for Plotly Express figure
+                    fig_corr.update_layout(
+                        height=chart_height,
+                        paper_bgcolor='white',
+                        plot_bgcolor='white',
+                        font=dict(color='#2C3E50', size=12, family='Arial, sans-serif'),
+                        title=dict(
+                            font=dict(size=18, color='#2C3E50', family='Arial, sans-serif'),
+                            x=0.5,
+                            xanchor='center'
+                        ),
+                        legend=dict(
+                            bgcolor='rgba(255,255,255,0.9)',
+                            bordercolor='#DEE2E6',
+                            borderwidth=1,
+                            font=dict(color='#2C3E50')
+                        ),
+                        hoverlabel=dict(
+                            bgcolor='white',
+                            font_size=14,
+                            font_family="Arial, sans-serif",
+                            font_color='#2C3E50',
+                            bordercolor='#DEE2E6'
+                        )
+                    )
+                    
+                    # Update axes separately
+                    fig_corr.update_xaxes(
+                        gridcolor='#E9ECEF' if show_grid else 'rgba(0,0,0,0)',
+                        zerolinecolor='#DEE2E6',
+                        tickfont=dict(color='#2C3E50'),
+                        titlefont=dict(color='#2C3E50')
+                    )
+                    fig_corr.update_yaxes(
+                        gridcolor='#E9ECEF' if show_grid else 'rgba(0,0,0,0)',
+                        zerolinecolor='#DEE2E6',
+                        tickfont=dict(color='#2C3E50'),
+                        titlefont=dict(color='#2C3E50')
+                    )
                     
                     st.plotly_chart(fig_corr, use_container_width=True)
                 
@@ -1257,8 +1332,45 @@ if selected_files:
                     color_discrete_sequence=selected_colors
                 )
                 
-                layout = get_plot_layout('', 400)
-                fig_seasonal.update_layout(**layout)
+                # Update layout for Plotly Express figure
+                fig_seasonal.update_layout(
+                    height=400,
+                    paper_bgcolor='white',
+                    plot_bgcolor='white',
+                    font=dict(color='#2C3E50', size=12, family='Arial, sans-serif'),
+                    title=dict(
+                        font=dict(size=18, color='#2C3E50', family='Arial, sans-serif'),
+                        x=0.5,
+                        xanchor='center'
+                    ),
+                    legend=dict(
+                        bgcolor='rgba(255,255,255,0.9)',
+                        bordercolor='#DEE2E6',
+                        borderwidth=1,
+                        font=dict(color='#2C3E50')
+                    ),
+                    hoverlabel=dict(
+                        bgcolor='white',
+                        font_size=14,
+                        font_family="Arial, sans-serif",
+                        font_color='#2C3E50',
+                        bordercolor='#DEE2E6'
+                    )
+                )
+                
+                # Update axes separately
+                fig_seasonal.update_xaxes(
+                    gridcolor='#E9ECEF' if show_grid else 'rgba(0,0,0,0)',
+                    zerolinecolor='#DEE2E6',
+                    tickfont=dict(color='#2C3E50'),
+                    titlefont=dict(color='#2C3E50')
+                )
+                fig_seasonal.update_yaxes(
+                    gridcolor='#E9ECEF' if show_grid else 'rgba(0,0,0,0)',
+                    zerolinecolor='#DEE2E6',
+                    tickfont=dict(color='#2C3E50'),
+                    titlefont=dict(color='#2C3E50')
+                )
                 
                 st.plotly_chart(fig_seasonal, use_container_width=True)
                 
