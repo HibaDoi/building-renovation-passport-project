@@ -44,10 +44,10 @@ def load_shapefile_from_gcs():
         
         st.write("📥 Reading shapefile directly from Google Cloud Storage...")
         
-        # Read the shapefile directly from GCS
-        gdf = gpd.read_file(gcs_path, storage_options={'token': credentials})
+        # # Read the shapefile directly from GCS
+        # gdf = gpd.read_file(gcs_path, storage_options={'token': credentials})
         
-        st.success(f"✅ Successfully loaded shapefile with {len(gdf)} features")
+        # st.success(f"✅ Successfully loaded shapefile with {len(gdf)} features")
         return gdf
             
     except Exception as e:
