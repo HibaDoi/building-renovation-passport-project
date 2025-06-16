@@ -19,21 +19,28 @@ st.set_page_config(
 st.write("Fiona version:", fiona.__version__)
 st.write("GeoPandas versionjjjjjj:", gpd.__version__)
 
+credentials = service_account.Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"]
+        )
+# Initialize GCS client
+client = storage.Client(credentials=credentials)
+bucket = client.bucket("renodat")
+# Access a specific file directly
+file_path = "u.shp"  # Replace with your actual file path
+blob = bucket.blob(file_path)
+st.write("blooooooooooob:", blob)
 def load_shapefile_from_gcs():
     """Load shapefile directly from Google Cloud Storage using Streamlit secrets"""
     
     try:
         st.write("GeoPandas versionjjjjjj:", gpd.__version__)
         # Create credentials from Streamlit secrets
-        credentials = service_account.Credentials.from_service_account_info(
-            st.secrets["gcp_service_account"]
-        )
         
-        # Initialize GCS client
-        client = storage.Client(credentials=credentials)
+        
+        
         
         # Read shapefile directly from GCS using the gs:// protocol
-        gcs_path = "gs://renodat/shpp/u.shp"
+        gcs_path = blob
         
         st.write("📥 Reading shapefile directly from Google Cloud Storage...")
         
