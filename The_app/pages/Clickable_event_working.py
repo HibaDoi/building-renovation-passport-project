@@ -443,22 +443,92 @@ def main():
             building_num = st.session_state.sim_building_number
             st.markdown(f"### 🔥 Energy Analysis for Building `{building_num}`")
             
-            # Here you can add your plotting code using the building_num
-            st.info(f"Building Number for Simulation: **{building_num}**")
-            st.write("You can now use this building number to:")
-            st.write(f"- Load file: `NL_Building_{building_num}_result.mat`")
-            st.write(f"- Plot energy consumption graphs")
-            st.write(f"- Analyze heating/cooling data")
+            # Download and plot the actual simulation data
+            mat_file_name = f"simulation/NL_Building_{building_num}_result.mat"
             
-            # Placeholder for your actual plotting code
-            st.code(f"""
-# Use this building number in your simulation code:
-building_number = "{building_num}"
-mat_file = f"NL_Building_{{building_number}}_result.mat"
-
-# Your plotting code here...
-# Load the .mat file and create graphs
-            """, language="python")
+            try:
+                # Download the .mat file from GCS
+                blob = bucket.blob(mat_file_name)
+                if blob.exists():
+                    # Download file
+                    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mat')
+                    blob.download_to_filename(temp_file.name)
+                    
+                    st.success(f"✅ Loaded simulation data for building {building_num}")
+                    
+                    try:
+                        # Import required libraries for plotting
+                        from buildingspy.io.outputfile import Reader
+                        import matplotlib.pyplot as plt
+                        import numpy as np
+                        
+                        # Load .mat file
+                        r = Reader(temp_file.name, "dymola")
+                        
+                        # Get heating power data
+                        time, heat_data = r.values('multizone.PHeater[1]')
+                        
+                        # Convert seconds to months
+                        seconds_per_year = 365 * 24 * 3600
+                        seconds_per_month = seconds_per_year / 12.0
+                        time_months = time / seconds_per_month
+                        
+                        # Create the energy consumption plot
+                        fig, ax = plt.subplots(figsize=(12, 6))
+                        ax.plot(time_months, heat_data, label=f"Building {building_num}", color='blue', linewidth=2)
+                        ax.set_xticks(np.arange(1, 13))
+                        ax.set_xticklabels([
+                            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                        ])
+                        ax.set_xlabel("Month")
+                        ax.set_ylabel("Heating Power (W)")
+                        ax.set_title(f"Heating Power Profile - Building {building_num}")
+                        ax.legend()
+                        ax.grid(True, alpha=0.3)
+                        
+                        # Display the plot
+                        st.pyplot(fig)
+                        
+                        # Calculate and display metrics
+                        total_consumption = np.trapz(heat_data, time) / 3600000  # Convert to kWh
+                        max_power = np.max(heat_data)
+                        avg_power = np.mean(heat_data)
+                        
+                        # Display metrics in columns
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("Total Annual Consumption", f"{total_consumption:,.0f} kWh")
+                        with col2:
+                            st.metric("Peak Power", f"{max_power:,.0f} W")
+                        with col3:
+                            st.metric("Average Power", f"{avg_power:,.0f} W")
+                        
+                        # Clean up temporary file
+                        os.unlink(temp_file.name)
+                        
+                    except ImportError:
+                        st.error("📦 **buildingspy not installed!**")
+                        st.code("pip install buildingspy", language="bash")
+                        st.info("Install buildingspy to enable simulation plotting.")
+                        # Clean up
+                        os.unlink(temp_file.name)
+                        
+                    except Exception as e:
+                        st.error(f"Error loading simulation data: {str(e)}")
+                        st.info("Make sure the .mat file contains 'multizone.PHeater[1]' variable.")
+                        # Clean up
+                        try:
+                            os.unlink(temp_file.name)
+                        except:
+                            pass
+                        
+                else:
+                    st.error(f"❌ Simulation file not found: `{mat_file_name}`")
+                    st.info("The simulation file may not exist in Google Cloud Storage.")
+                    
+            except Exception as e:
+                st.error(f"Error accessing simulation file: {str(e)}")
             
             if st.button("❌ Close Graph Section"):
                 st.session_state.plot_simulation = False
