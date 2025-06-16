@@ -734,10 +734,48 @@ if selected_files:
                         nbinsx=30
                     ))
                     
-                    layout = get_plot_layout('Power Distribution', chart_height)
-                    layout['xaxis']['title'] = 'Power (W)'
-                    layout['yaxis']['title'] = 'Frequency'
-                    fig_dist.update_layout(**layout)
+                    # Update layout directly
+                    fig_dist.update_layout(
+                        title=dict(
+                            text='Power Distribution',
+                            font=dict(size=18, color='#2C3E50', family='Arial, sans-serif'),
+                            x=0.5,
+                            xanchor='center'
+                        ),
+                        height=chart_height,
+                        paper_bgcolor='white',
+                        plot_bgcolor='white',
+                        font=dict(color='#2C3E50', size=12, family='Arial, sans-serif'),
+                        xaxis_title='Power (W)',
+                        yaxis_title='Frequency',
+                        legend=dict(
+                            bgcolor='rgba(255,255,255,0.9)',
+                            bordercolor='#DEE2E6',
+                            borderwidth=1,
+                            font=dict(color='#2C3E50')
+                        ),
+                        hoverlabel=dict(
+                            bgcolor='white',
+                            font_size=14,
+                            font_family="Arial, sans-serif",
+                            font_color='#2C3E50',
+                            bordercolor='#DEE2E6'
+                        )
+                    )
+                    
+                    # Update axes
+                    fig_dist.update_xaxes(
+                        gridcolor='#E9ECEF' if show_grid else 'rgba(0,0,0,0)',
+                        zerolinecolor='#DEE2E6',
+                        tickfont=dict(color='#2C3E50'),
+                        titlefont=dict(color='#2C3E50')
+                    )
+                    fig_dist.update_yaxes(
+                        gridcolor='#E9ECEF' if show_grid else 'rgba(0,0,0,0)',
+                        zerolinecolor='#DEE2E6',
+                        tickfont=dict(color='#2C3E50'),
+                        titlefont=dict(color='#2C3E50')
+                    )
                     
                     st.plotly_chart(fig_dist, use_container_width=True)
                 
@@ -1159,8 +1197,46 @@ if selected_files:
                     hoverongaps=False
                 ))
                 
-                layout = get_plot_layout("Normalized Performance Metrics", 400)
-                fig_heatmap.update_layout(**layout)
+                # Update layout directly
+                fig_heatmap.update_layout(
+                    title=dict(
+                        text="Normalized Performance Metrics",
+                        font=dict(size=18, color='#2C3E50', family='Arial, sans-serif'),
+                        x=0.5,
+                        xanchor='center'
+                    ),
+                    height=400,
+                    paper_bgcolor='white',
+                    plot_bgcolor='white',
+                    font=dict(color='#2C3E50', size=12, family='Arial, sans-serif'),
+                    legend=dict(
+                        bgcolor='rgba(255,255,255,0.9)',
+                        bordercolor='#DEE2E6',
+                        borderwidth=1,
+                        font=dict(color='#2C3E50')
+                    ),
+                    hoverlabel=dict(
+                        bgcolor='white',
+                        font_size=14,
+                        font_family="Arial, sans-serif",
+                        font_color='#2C3E50',
+                        bordercolor='#DEE2E6'
+                    )
+                )
+                
+                # Update axes
+                fig_heatmap.update_xaxes(
+                    gridcolor='#E9ECEF' if show_grid else 'rgba(0,0,0,0)',
+                    zerolinecolor='#DEE2E6',
+                    tickfont=dict(color='#2C3E50'),
+                    titlefont=dict(color='#2C3E50')
+                )
+                fig_heatmap.update_yaxes(
+                    gridcolor='#E9ECEF' if show_grid else 'rgba(0,0,0,0)',
+                    zerolinecolor='#DEE2E6',
+                    tickfont=dict(color='#2C3E50'),
+                    titlefont=dict(color='#2C3E50')
+                )
                 
                 st.plotly_chart(fig_heatmap, use_container_width=True)
                 
@@ -1290,9 +1366,47 @@ if selected_files:
                             boxmean='sd'  # Show mean and standard deviation
                         ))
                     
-                    layout = get_plot_layout('Power Distribution by Building', chart_height)
-                    layout['yaxis']['title'] = 'Power (W)'
-                    fig_dist.update_layout(**layout)
+                    # Update layout directly
+                    fig_dist.update_layout(
+                        title=dict(
+                            text='Power Distribution by Building',
+                            font=dict(size=18, color='#2C3E50', family='Arial, sans-serif'),
+                            x=0.5,
+                            xanchor='center'
+                        ),
+                        height=chart_height,
+                        paper_bgcolor='white',
+                        plot_bgcolor='white',
+                        font=dict(color='#2C3E50', size=12, family='Arial, sans-serif'),
+                        yaxis_title='Power (W)',
+                        legend=dict(
+                            bgcolor='rgba(255,255,255,0.9)',
+                            bordercolor='#DEE2E6',
+                            borderwidth=1,
+                            font=dict(color='#2C3E50')
+                        ),
+                        hoverlabel=dict(
+                            bgcolor='white',
+                            font_size=14,
+                            font_family="Arial, sans-serif",
+                            font_color='#2C3E50',
+                            bordercolor='#DEE2E6'
+                        )
+                    )
+                    
+                    # Update axes
+                    fig_dist.update_xaxes(
+                        gridcolor='#E9ECEF' if show_grid else 'rgba(0,0,0,0)',
+                        zerolinecolor='#DEE2E6',
+                        tickfont=dict(color='#2C3E50'),
+                        titlefont=dict(color='#2C3E50')
+                    )
+                    fig_dist.update_yaxes(
+                        gridcolor='#E9ECEF' if show_grid else 'rgba(0,0,0,0)',
+                        zerolinecolor='#DEE2E6',
+                        tickfont=dict(color='#2C3E50'),
+                        titlefont=dict(color='#2C3E50')
+                    )
                     
                     st.plotly_chart(fig_dist, use_container_width=True)
                 
