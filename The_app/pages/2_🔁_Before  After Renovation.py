@@ -17,7 +17,7 @@ st.set_page_config(
 )
 
 st.write("Fiona version:", fiona.__version__)
-st.write("GeoPandas version:", gpd.__version__)
+st.write("GeoPandas versionjjjjjj:", gpd.__version__)
 
 def load_shapefile_from_gcs():
     """Load shapefile directly from Google Cloud Storage using Streamlit secrets"""
