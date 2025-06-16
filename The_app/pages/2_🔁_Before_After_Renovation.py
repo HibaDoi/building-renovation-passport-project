@@ -253,7 +253,8 @@ def main():
         st.subheader("📊 Heat Consumption Analysis")
         
         target_building_id = "NL.IMBAG.Pand.0503100000019674"
-        file_path = "E:/building-renovation-passport-project/Open_modula_maybe/simulation_results/NL_Building_0503100000019674_result.mat"
+        file_path = next((blob.name for blob in mat_blobs 
+                   if blob.name.endswith(f"{'0503100000019674_result'}.mat")), None)
         
         if os.path.exists(file_path):
             try:
@@ -301,7 +302,8 @@ def main():
                     st.metric("Average Power", f"{avg_power:,.0f} W")
                 
                 with col2:
-                    post_file_path = "E:/building-renovation-passport-project/Open_modula_maybe/simulation_results/NL_Building_0503100000013392_result.mat"
+                    post_file_path = next((blob.name for blob in mat_blobs 
+                   if blob.name.endswith(f"{'0503100000013392_result'}.mat")), None)
                     if os.path.exists(post_file_path):
                         st.markdown("#### 🌱 Post-Renovation Heating")
                         
