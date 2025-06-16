@@ -10,13 +10,28 @@ import fiona
 from google.cloud import storage
 from google.oauth2 import service_account
 
+
+
 # Set page configuration
 st.set_page_config(
     page_title="Building Map Dashboard",
     page_icon="🗺️",
     layout="wide"
 )
-
+##################################################
+# Function to download file from GCS
+@st.cache_data
+def download_file_from_gcs(blob_name):
+    """Download file from Google Cloud Storage to temporary location"""
+    try:
+        blob = bucket.blob(blob_name)
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mat')
+        blob.download_to_filename(temp_file.name)
+        return temp_file.name
+    except Exception as e:
+        st.error(f"Error downloading {blob_name}: {str(e)}")
+        return None
+#################################################
 credentials = service_account.Credentials.from_service_account_info(
             st.secrets["gcp_service_account"]
         )
@@ -265,7 +280,7 @@ def main():
             file_blob = matching_blobs[0]  # Get the first (should be only) match
             st.success(f"✅ Found file: {file_blob.name}")
         file_path = file_blob.name
-        
+        file_path=download_file_from_gcs(file_path)
         if True:
             try:
                 from buildingspy.io.outputfile import Reader
@@ -322,9 +337,8 @@ def main():
                     if matching_blobs:
                         file_blob = matching_blobs[0]  # Get the first (should be only) match
                         st.success(f"✅ Found file: {file_blob.name}")
-                    post_file_path = file_blob.name
-                    if os.path.exists(post_file_path):
-                        st.markdown("#### 🌱 Post-Renovation Heating")
+                        post_file_path = file_blob.name
+                        post_file_path=download_file_from_gcs(post_file_path)
                         
                         # Load post-renovation data
                         r_post = Reader(post_file_path, "dymola")
