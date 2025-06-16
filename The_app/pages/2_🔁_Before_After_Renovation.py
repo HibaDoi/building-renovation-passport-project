@@ -256,7 +256,7 @@ def main():
         file_path = next((s for s in mat_files
                    if s.endswith(f"{'0503100000019674'}.mat")), None)
         
-        if os.path.exists(file_path):
+        if True:
             try:
                 from buildingspy.io.outputfile import Reader
                 
