@@ -1026,21 +1026,45 @@ if selected_files:
                                      f'{int(selected_colors[i % len(selected_colors)][5:7], 16)}, 0.2)'
                         ))
                     
-                    layout = get_plot_layout("Multi-Metric Performance Comparison", chart_height)
-                    layout['polar'] = dict(
-                        radialaxis=dict(
-                            visible=True,
-                            range=[0, 100],
-                            gridcolor='#E9ECEF',
-                            tickfont=dict(color='#2C3E50')
+                    # Update layout for radar chart
+                    fig_radar.update_layout(
+                        title=dict(
+                            text="Multi-Metric Performance Comparison",
+                            font=dict(size=18, color='#2C3E50', family='Arial, sans-serif'),
+                            x=0.5,
+                            xanchor='center'
                         ),
-                        angularaxis=dict(
-                            gridcolor='#E9ECEF',
-                            tickfont=dict(color='#2C3E50')
+                        height=chart_height,
+                        margin=dict(l=60, r=30, t=60, b=40),
+                        paper_bgcolor='white',
+                        font=dict(color='#2C3E50', size=12, family='Arial, sans-serif'),
+                        polar=dict(
+                            radialaxis=dict(
+                                visible=True,
+                                range=[0, 100],
+                                gridcolor='#E9ECEF',
+                                tickfont=dict(color='#2C3E50')
+                            ),
+                            angularaxis=dict(
+                                gridcolor='#E9ECEF',
+                                tickfont=dict(color='#2C3E50')
+                            ),
+                            bgcolor='white'
                         ),
-                        bgcolor='white'
+                        legend=dict(
+                            bgcolor='rgba(255,255,255,0.9)',
+                            bordercolor='#DEE2E6',
+                            borderwidth=1,
+                            font=dict(color='#2C3E50')
+                        ),
+                        hoverlabel=dict(
+                            bgcolor='white',
+                            font_size=14,
+                            font_family="Arial, sans-serif",
+                            font_color='#2C3E50',
+                            bordercolor='#DEE2E6'
+                        )
                     )
-                    fig_radar.update_layout(**layout)
                     
                     st.plotly_chart(fig_radar, use_container_width=True)
                 
