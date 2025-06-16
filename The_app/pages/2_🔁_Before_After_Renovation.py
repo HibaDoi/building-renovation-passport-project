@@ -17,12 +17,9 @@ st.set_page_config(
     layout="wide"
 )
 
-
-
 credentials = service_account.Credentials.from_service_account_info(
             st.secrets["gcp_service_account"]
         )
-
 bucket_name="renodat"
 client = storage.Client(credentials=credentials)
 bucket = client.bucket(bucket_name)
@@ -50,7 +47,17 @@ def load_shapefile_from_gcs(blob_prefix,bucket):
         # Load the shapefile
         shp_path = os.path.join(temp_dir, "temp.shp")
         gdf = gpd.read_file(shp_path)
-        st.write("okkkk")
+        # Drop instances that do not end with -0
+        gdf = gdf[gdf["object_id"].astype(str).str.endswith("-0")]
+        
+        # Clean object_id to remove '-0' for comparison
+        if isinstance(gdf["object_id"].iloc[0], list):
+            gdf["object_id_clean"] = gdf["object_id"].apply(
+                lambda x: x[0].replace("-0", "") if isinstance(x, list) and len(x) > 0 else "")
+        else:
+            gdf["object_id_clean"] = gdf["object_id"].astype(str).str.replace("-0", "", regex=False)
+    
+        gdf = gdf.to_crs(epsg=4326)
     
     return gdf
 # def load_building_info(json_file_path):
@@ -175,9 +182,9 @@ def main():
             building_ids, mat_files = get_building_ids(mat_blobs)
             
             
-            # # Filter only buildings that have corresponding .mat results
-            # filtered_gdf = gdf[gdf["object_id_clean"].isin(building_ids)]
-            # st.write(filtered_gdf)
+            # Filter only buildings that have corresponding .mat results
+            filtered_gdf = gdf[gdf["object_id_clean"].isin(building_ids)]
+            st.write(filtered_gdf)
 #             # Load building information
 #             building_data = load_building_info(building_info_path)
             
