@@ -252,13 +252,14 @@ def main():
     with tab2:
         st.subheader("📊 Heat Consumption Analysis")
         
-        
+        mat_blobs_list = list(client.list_blobs(bucket, prefix="simulation/"))
+
                             # Find the specific file
         building_id = "0503100000019674"
         target_filename = f"{building_id}_result.mat"
 
         # Filter to find your specific file
-        matching_blobs = [blob for blob in mat_blobs if blob.name.endswith(target_filename)]
+        matching_blobs = [blob for blob in mat_blobs_list if blob.name.endswith(target_filename)]
 
         if matching_blobs:
             file_blob = matching_blobs[0]  # Get the first (should be only) match
@@ -316,7 +317,7 @@ def main():
                     target_filename = f"{building_id}_result.mat"
 
                     # Filter to find your specific file
-                    matching_blobs = [blob for blob in mat_blobs if blob.name.endswith(target_filename)]
+                    matching_blobs = [blob for blob in mat_blobs_list if blob.name.endswith(target_filename)]
 
                     if matching_blobs:
                         file_blob = matching_blobs[0]  # Get the first (should be only) match
