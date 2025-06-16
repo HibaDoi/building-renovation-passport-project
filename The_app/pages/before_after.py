@@ -6,6 +6,7 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 import fiona, geopandas as gpd, streamlit as st
+import fiona, geopandas as gpd, streamlit as st
 # Set page configuration
 st.set_page_config(
     page_title="Building Map Dashboard",
@@ -14,7 +15,6 @@ st.set_page_config(
 )
 st.write("Fiona version :", fiona.__version__)
 st.write("GeoPandas version :", gpd.__version__)
-
 
 # Create tabs for different views
 tab1, tab2 = st.tabs(["🗺️ Building Map", "📊 Energy Analysis"])
