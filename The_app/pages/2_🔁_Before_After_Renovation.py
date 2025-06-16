@@ -181,9 +181,9 @@ def main():
             # Get all building IDs from the .mat filenames
             building_ids, mat_files = get_building_ids(mat_blobs)
             st.write(building_ids)
-            
+            clean_building_ids = [bid.split('/')[-1] for bid in building_ids]
             # Filter only buildings that have corresponding .mat results
-            filtered_gdf = gdf[gdf["object_id_clean"].isin(building_ids.split('/')[1]
+            filtered_gdf = gdf[gdf["object_id_clean"].isin(clean_building_ids
 )]
             st.write(filtered_gdf.drop(columns=['geometry'], errors='ignore'))
 #             # Load building information
