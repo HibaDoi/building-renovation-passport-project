@@ -130,14 +130,13 @@ def load_shapefile_from_gcs(blob_prefix,bucket):
 #     return gdf
 
 # @st.cache_data
-# def get_building_ids(results_folder):
-#     """Get building IDs from .mat files"""
-#     if os.path.exists(results_folder):
-#         mat_files = [f for f in os.listdir(results_folder) if f.endswith("_result.mat")]
-#         building_ids = [f.replace("_result.mat", "").replace("NL_Building_", "NL.IMBAG.Pand.") for f in mat_files]
-#         return building_ids, mat_files
-#     else:
-#         return [], []
+def get_building_ids(mat_blobs):
+    """Get building IDs from .mat files"""
+
+    mat_files = [blob.name for blob in mat_blobs if blob.name.endswith(".mat")]
+    building_ids = [f.replace("_result.mat", "").replace("NL_Building_", "NL.IMBAG.Pand.") for f in mat_files]
+    return building_ids, mat_files
+
 
 def load_json_from_gcs(blob_name,bucket):
     st.write("i am here")
@@ -166,11 +165,15 @@ def main():
             building_data = load_json_from_gcs("for_teaser",bucket)
             st.write(building_data)
             
-            # # Path to folder containing .mat files
-            # results_folder = "Open_modula_maybe/simulation_results"
+            # Path to folder containing .mat files
+            mat_blobs = client.list_blobs(
+                    bucket,
+                    prefix="simulation/",
+                )
             
-#             # Get all building IDs from the .mat filenames
-#             building_ids, mat_files = get_building_ids(results_folder)
+            # Get all building IDs from the .mat filenames
+            building_ids, mat_files = get_building_ids(mat_blobs)
+            st.write("aal_good")
             
 #             # Filter only buildings that have corresponding .mat results
 #             filtered_gdf = gdf[gdf["object_id_clean"].isin(building_ids)]
