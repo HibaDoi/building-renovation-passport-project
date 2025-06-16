@@ -30,104 +30,350 @@ client = storage.Client(credentials=credentials)
 bucket = client.bucket("renodat")
 mat_blobs = client.list_blobs(
     bucket,
-    prefix="simulation/",   # ← attention au slash final
+    prefix="simulation/",
 )
 
-# 🎨 Custom CSS for beautiful styling
+# 🎨 Enhanced CSS with modern color scheme
 st.markdown("""
 <style>
-    /* Main background */
+    /* CSS Variables for consistent theming */
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        --dark-bg: rgba(20, 20, 40, 0.95);
+        --light-glass: rgba(255, 255, 255, 0.1);
+        --medium-glass: rgba(255, 255, 255, 0.15);
+        --text-primary: #ffffff;
+        --text-secondary: rgba(255, 255, 255, 0.85);
+        --text-muted: rgba(255, 255, 255, 0.6);
+        --shadow-strong: 0 20px 60px rgba(0, 0, 0, 0.3);
+        --shadow-medium: 0 10px 30px rgba(0, 0, 0, 0.2);
+        --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Main app background */
+    .stApp {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        min-height: 100vh;
+    }
+    
+    /* Main content area */
     .main {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 0rem 1rem;
+        padding: 0;
+        background: transparent;
     }
     
-    /* Custom container */
+    /* Hide default Streamlit elements */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: var(--primary-gradient);
+        border-radius: 10px;
+    }
+    
+    /* Dashboard container with glassmorphism */
     .dashboard-container {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        padding: 1.5rem;
-        margin: 0.5rem 0;
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        padding: 2rem;
+        margin: 1rem 0;
+        box-shadow: var(--shadow-strong);
+        position: relative;
+        overflow: hidden;
     }
     
-    /* Title styling */
+    .dashboard-container::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        animation: shimmer 3s ease-in-out infinite;
+    }
+    
+    @keyframes shimmer {
+        0%, 100% { opacity: 0; }
+        50% { opacity: 0.5; }
+    }
+    
+    /* Enhanced title with gradient text */
     .dashboard-title {
-        font-size: 2.5rem;
-        font-weight: 700;
+        font-size: 3.5rem;
+        font-weight: 800;
         text-align: center;
-        color: white;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        margin-bottom: 1rem;
-        background: linear-gradient(45deg, #fff, #e8f4ff);
+        margin: 2rem 0 3rem 0;
+        background: linear-gradient(135deg, #fff 0%, #f093fb 25%, #4facfe 50%, #fff 100%);
+        background-size: 200% auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
+        animation: gradient-shift 3s ease infinite;
+        text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
     }
     
-    /* Metric cards - smaller */
-    .metric-card-small {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 10px;
-        padding: 1rem;
-        margin: 0.25rem;
-        border: 1px solid rgba(255, 255, 255, 0.3);
+    @keyframes gradient-shift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    
+    /* Modern metric cards */
+    .metric-card {
+        background: linear-gradient(135deg, var(--medium-glass), var(--light-glass));
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin: 0.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
         backdrop-filter: blur(10px);
         text-align: center;
-        transition: all 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
     }
     
-    .metric-card-small:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    .metric-card::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 60%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
     }
     
-    .metric-value-small {
-        font-size: 1.8rem;
-        font-weight: bold;
-        color: #fff;
-        margin: 0.25rem 0;
+    .metric-card:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: var(--shadow-strong);
+        border-color: rgba(255, 255, 255, 0.3);
     }
     
-    .metric-label-small {
-        font-size: 0.85rem;
-        color: rgba(255, 255, 255, 0.8);
-        text-transform: uppercase;
+    .metric-card:hover::after {
+        opacity: 1;
     }
     
-    /* Compact info box */
-    .info-box-compact {
-        background: linear-gradient(135deg, #74b9ff, #0984e3);
-        color: white;
-        padding: 0.75rem;
-        border-radius: 8px;
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: var(--accent-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
         margin: 0.5rem 0;
-        border-left: 4px solid #fff;
+        line-height: 1;
+    }
+    
+    .metric-label {
         font-size: 0.9rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 500;
     }
     
-    /* Sidebar styling */
-    .css-1d391kg {
-        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    /* Info boxes with gradient borders */
+    .info-box {
+        background: linear-gradient(135deg, var(--dark-bg), rgba(30, 30, 50, 0.95));
+        color: var(--text-primary);
+        padding: 1.5rem;
+        border-radius: 16px;
+        margin: 1rem 0;
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow-medium);
     }
     
-    /* Tab styling */
+    .info-box::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--accent-gradient);
+    }
+    
+    .info-box h4 {
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+    
+    .info-box p {
+        margin: 0.25rem 0;
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+    
+    /* Enhanced sidebar */
+    .css-1d391kg, [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, rgba(20, 20, 40, 0.98) 0%, rgba(16, 21, 62, 0.98) 100%);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .css-1d391kg .block-container {
+        padding: 2rem 1rem;
+    }
+    
+    /* Sidebar headers */
+    .css-1d391kg h2, .css-1d391kg h3 {
+        background: var(--accent-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 600;
+    }
+    
+    /* Modern tabs */
     .stTabs [data-baseweb="tab-list"] {
-        background-color: rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
+        background: var(--light-glass);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        padding: 0.25rem;
+        gap: 0.25rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
     
     .stTabs [data-baseweb="tab"] {
-        background-color: rgba(255, 255, 255, 0.1);
-        color: white;
+        background: transparent;
+        color: var(--text-secondary);
         border-radius: 8px;
-        margin: 2px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
     }
     
     .stTabs [aria-selected="true"] {
-        background-color: rgba(255, 255, 255, 0.3);
+        background: var(--primary-gradient);
+        color: var(--text-primary);
+        box-shadow: var(--shadow-light);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Modern buttons */
+    .stButton > button {
+        background: var(--primary-gradient);
+        color: white;
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 12px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-strong);
+    }
+    
+    /* Select boxes and inputs */
+    .stSelectbox > div > div, .stMultiSelect > div > div {
+        background: var(--light-glass);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        color: var(--text-primary);
+    }
+    
+    /* Checkbox styling */
+    .stCheckbox {
+        color: var(--text-secondary);
+    }
+    
+    /* Slider styling */
+    .stSlider > div > div {
+        background: var(--light-glass);
+    }
+    
+    .stSlider > div > div > div {
+        background: var(--primary-gradient);
+    }
+    
+    /* Progress bar */
+    .stProgress > div > div > div {
+        background: var(--accent-gradient);
+    }
+    
+    /* Dataframe styling */
+    .dataframe {
+        background: var(--light-glass);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .dataframe th {
+        background: var(--primary-gradient);
+        color: var(--text-primary);
+        font-weight: 600;
+        padding: 1rem;
+    }
+    
+    .dataframe td {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-secondary);
+        padding: 0.75rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    /* Plotly chart container */
+    .js-plotly-plot {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow-light);
+    }
+    
+    /* Animation for loading state */
+    @keyframes pulse {
+        0%, 100% { opacity: 0.4; }
+        50% { opacity: 1; }
+    }
+    
+    .loading {
+        animation: pulse 2s ease-in-out infinite;
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .dashboard-title {
+            font-size: 2rem;
+        }
+        
+        .metric-value {
+            font-size: 1.8rem;
+        }
+        
+        .dashboard-container {
+            padding: 1rem;
+            margin: 0.5rem;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -141,7 +387,6 @@ def download_file_from_gcs(blob_name):
     """Download file from Google Cloud Storage to temporary location"""
     try:
         blob = bucket.blob(blob_name)
-        # Create a temporary file
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mat')
         blob.download_to_filename(temp_file.name)
         return temp_file.name
@@ -188,92 +433,144 @@ def load_building_data(file_path):
         st.error(f"Error loading data: {str(e)}")
         return None, None
 
-# 📊 Sidebar Configuration - Compact
+# Define modern color palettes
+CHART_COLORS = {
+    'primary': ['#667eea', '#764ba2', '#f093fb', '#f5576c'],
+    'secondary': ['#4facfe', '#00f2fe', '#fa709a', '#fee140'],
+    'accent': ['#a8edea', '#fed6e3', '#ffecd2', '#fcb69f'],
+    'dark': ['#30cfd0', '#330867', '#c471f5', '#fa71cd']
+}
+
+# Plotly layout template
+def get_plot_layout(title="", height=400):
+    return dict(
+        title=dict(
+            text=title,
+            font=dict(size=20, color='white'),
+            x=0.5,
+            xanchor='center'
+        ),
+        height=height,
+        margin=dict(l=60, r=30, t=60, b=40),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(255,255,255,0.05)',
+        font=dict(color='white', size=12),
+        xaxis=dict(
+            gridcolor='rgba(255,255,255,0.1)',
+            zerolinecolor='rgba(255,255,255,0.2)',
+            color='white'
+        ),
+        yaxis=dict(
+            gridcolor='rgba(255,255,255,0.1)',
+            zerolinecolor='rgba(255,255,255,0.2)',
+            color='white'
+        ),
+        legend=dict(
+            bgcolor='rgba(0,0,0,0.5)',
+            bordercolor='rgba(255,255,255,0.2)',
+            borderwidth=1,
+            font=dict(color='white')
+        ),
+        hoverlabel=dict(
+            bgcolor='rgba(20,20,40,0.9)',
+            font_size=14,
+            font_family="Arial",
+            font_color='white'
+        )
+    )
+
+# 📊 Sidebar Configuration
 with st.sidebar:
-    st.markdown("## 🎛️ Controls")
+    st.markdown("## 🎛️ Control Panel")
     
     # Building selection
     st.markdown("### 🏢 Building Selection")
     
-    if True:
-        mat_files = [blob.name for blob in mat_blobs if blob.name.endswith(".mat")]
+    mat_files = [blob.name for blob in mat_blobs if blob.name.endswith(".mat")]
 
-        if mat_files:
-            # Create building mapping
-            building_mapping = {}
-            for file in mat_files:
-                # Extract just the filename without the path
-                filename = os.path.basename(file)
-                building_name = filename.replace('.mat', '').replace('_', ' ').title()
-                building_mapping[building_name] = file
+    if mat_files:
+        # Create building mapping
+        building_mapping = {}
+        for file in mat_files:
+            filename = os.path.basename(file)
+            building_name = filename.replace('.mat', '').replace('_', ' ').title()
+            building_mapping[building_name] = file
+        
+        # Analysis mode selection
+        analysis_mode = st.radio(
+            "📊 Analysis Mode",
+            ["Single Building", "Compare Buildings", "All Buildings"],
+            help="Choose your analysis approach"
+        )
+        
+        if analysis_mode == "Single Building":
+            selected_building = st.selectbox(
+                "Choose a building:",
+                list(building_mapping.keys()),
+                help="Select one building to analyze in detail"
+            )
+            selected_buildings = [selected_building]
             
-            # Analysis mode selection
-            analysis_mode = st.radio(
-                "Analysis Mode:",
-                ["Single Building", "Compare Buildings", "All Buildings"],
-                help="Choose your analysis approach"
+        elif analysis_mode == "Compare Buildings":
+            selected_buildings = st.multiselect(
+                "Select buildings to compare:",
+                list(building_mapping.keys()),
+                default=list(building_mapping.keys())[:2] if len(building_mapping) >= 2 else list(building_mapping.keys()),
+                help="Choose 2-4 buildings for comparison"
             )
             
-            if analysis_mode == "Single Building":
-                # Single dropdown selection
-                selected_building = st.selectbox(
-                    "Choose a building:",
-                    list(building_mapping.keys()),
-                    help="Select one building to analyze in detail"
-                )
-                selected_buildings = [selected_building]
+            if len(selected_buildings) > 4:
+                st.warning("⚠️ Maximum 4 buildings for comparison")
+                selected_buildings = selected_buildings[:4]
                 
-            elif analysis_mode == "Compare Buildings":
-                # Multi-select for comparison
-                selected_buildings = st.multiselect(
-                    "Select buildings to compare:",
-                    list(building_mapping.keys()),
-                    default=list(building_mapping.keys())[:2] if len(building_mapping) >= 2 else list(building_mapping.keys()),
-                    help="Choose 2-4 buildings for comparison"
-                )
-                
-                if len(selected_buildings) > 4:
-                    st.warning("⚠️ Maximum 4 buildings for comparison")
-                    selected_buildings = selected_buildings[:4]
-                    
-            else:  # All Buildings
-                selected_buildings = list(building_mapping.keys())
-                st.info(f"📊 Analyzing all {len(selected_buildings)} buildings")
-            
-            selected_files = [building_mapping[building] for building in selected_buildings]
-            
-        else:
-            st.error("❌ No .mat files found!")
-            selected_files = []
-            selected_buildings = []
+        else:  # All Buildings
+            selected_buildings = list(building_mapping.keys())
+            st.info(f"📊 Analyzing all {len(selected_buildings)} buildings")
+        
+        selected_files = [building_mapping[building] for building in selected_buildings]
+        
     else:
-        st.error(f"❌ Directory not found!")
+        st.error("❌ No .mat files found!")
         selected_files = []
         selected_buildings = []
     
     st.markdown("---")
     
-    # Quick options
-    st.markdown("### ⚙️ Options")
-    show_all_metrics = st.checkbox("📊 All Metrics", value=True)
-    color_theme = st.selectbox("🎨 Theme", ["Viridis", "Plasma", "Set3"], index=0)
-    chart_height = st.slider("📏 Height", 300, 600, 400)
+    # Visualization options
+    st.markdown("### 🎨 Visualization Options")
+    color_scheme = st.selectbox(
+        "Color Scheme",
+        ["Ocean Dream", "Sunset Vibes", "Northern Lights", "Deep Space"],
+        index=0
+    )
+    
+    color_map = {
+        "Ocean Dream": CHART_COLORS['primary'],
+        "Sunset Vibes": CHART_COLORS['secondary'],
+        "Northern Lights": CHART_COLORS['accent'],
+        "Deep Space": CHART_COLORS['dark']
+    }
+    
+    selected_colors = color_map[color_scheme]
+    
+    chart_height = st.slider("Chart Height", 300, 700, 450, step=50)
+    show_animations = st.checkbox("Enable Animations", value=True)
+    show_grid = st.checkbox("Show Grid Lines", value=True)
 
 # Main dashboard content
 if selected_files:
-    
-    # Loaddata for all selected buildings
+    # Load data for all selected buildings
     building_data = {}
     building_stats = {}
     
-    # Create a progress bar for loading files
+    # Create a progress bar
     progress_bar = st.progress(0)
     status_text = st.empty()
     
     for i, file in enumerate(selected_files):
-        building_name = list(building_mapping.keys())[list(building_mapping.values()).index(file)]
+        building_name = selected_buildings[i]
         
-        status_text.text(f"Loading {building_name}...")
+        status_text.text(f"🔄 Loading {building_name}...")
         progress_bar.progress((i + 1) / len(selected_files))
         
         # Download file from GCS
@@ -296,19 +593,16 @@ if selected_files:
     status_text.empty()
     
     if building_data:
-        
-        # UNIFIED OVERVIEW SECTION
+        # OVERVIEW METRICS
         st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
         
-        # Dynamic header based on selection
+        # Dynamic header
         if len(selected_buildings) == 1:
-            st.markdown(f"## 🏢 {selected_buildings[0]} - Detailed Analysis")
-        elif len(selected_buildings) <= 4:
-            st.markdown(f"## 🔄 Comparing {len(selected_buildings)} Buildings")
+            st.markdown(f"## 🏢 {selected_buildings[0]} - Performance Analysis")
         else:
             st.markdown(f"## 📊 Portfolio Overview - {len(selected_buildings)} Buildings")
         
-        # Quick Stats Row
+        # Metrics row
         col1, col2, col3, col4, col5 = st.columns(5)
         
         total_buildings = len(building_data)
@@ -317,157 +611,189 @@ if selected_files:
         peak_demand = max(stats['max_power'] for stats in building_stats.values()) if building_stats else 0
         avg_temp = np.mean([stats['avg_temp'] for stats in building_stats.values()]) if building_stats else 0
         
-        with col1:
-            st.markdown(f'''
-            <div class="metric-card-small">
-                <div class="metric-value-small">{total_buildings}</div>
-                <div class="metric-label-small">Buildings</div>
-            </div>
-            ''', unsafe_allow_html=True)
+        metrics = [
+            (col1, total_buildings, "Buildings", "🏢"),
+            (col2, f"{total_consumption:,.0f}", "Total kWh", "⚡"),
+            (col3, f"{avg_consumption:,.0f}", "Avg kWh", "📊"),
+            (col4, f"{peak_demand:,.0f}", "Peak W", "📈"),
+            (col5, f"{avg_temp:.1f}°C", "Avg Temp", "🌡️")
+        ]
         
-        with col2:
-            st.markdown(f'''
-            <div class="metric-card-small">
-                <div class="metric-value-small">{total_consumption:.0f}</div>
-                <div class="metric-label-small">Total kWh</div>
-            </div>
-            ''', unsafe_allow_html=True)
-        
-        with col3:
-            st.markdown(f'''
-            <div class="metric-card-small">
-                <div class="metric-value-small">{avg_consumption:.0f}</div>
-                <div class="metric-label-small">Avg kWh</div>
-            </div>
-            ''', unsafe_allow_html=True)
-        
-        with col4:
-            st.markdown(f'''
-            <div class="metric-card-small">
-                <div class="metric-value-small">{peak_demand:.0f}</div>
-                <div class="metric-label-small">Peak W</div>
-            </div>
-            ''', unsafe_allow_html=True)
-        
-        with col5:
-            st.markdown(f'''
-            <div class="metric-card-small">
-                <div class="metric-value-small">{avg_temp:.1f}°C</div>
-                <div class="metric-label-small">Avg Temp</div>
-            </div>
-            ''', unsafe_allow_html=True)
+        for col, value, label, icon in metrics:
+            with col:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-label">{icon} {label}</div>
+                    <div class="metric-value">{value}</div>
+                </div>
+                ''', unsafe_allow_html=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
         
-        # SMART TABBED INTERFACE - Shows relevant tabs based on selection
+        # MAIN CONTENT TABS
         if len(selected_buildings) == 1:
-            # Single building - focus on detailed analysis
-            tab1, tab2, tab3 = st.tabs(["📈 Performance Details", "📊 Advanced Analytics", "💡 Insights"])
-            
-            # Single building detailed view
+            tabs = st.tabs(["📈 Performance", "📊 Analytics", "💡 Insights", "📅 Monthly"])
+        else:
+            tabs = st.tabs(["📈 Overview", "🔄 Comparison", "📊 Analytics", "🏆 Rankings"])
+        
+        # Single Building Analysis
+        if len(selected_buildings) == 1:
             building_name = selected_buildings[0]
             data = building_data[building_name]
             stats = building_stats[building_name]
             
-            with tab1:
+            with tabs[0]:  # Performance
                 st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
                 
-                # Individual building metrics
-                col1, col2, col3, col4 = st.columns(4)
+                # Create subplots
+                fig = make_subplots(
+                    rows=2, cols=1,
+                    subplot_titles=('Heating Power Consumption', 'Indoor Temperature'),
+                    vertical_spacing=0.15,
+                    row_heights=[0.5, 0.5]
+                )
                 
-                with col1:
-                    st.markdown(f'''
-                    <div class="metric-card-small">
-                        <div class="metric-value-small">{stats['max_power']:.0f}W</div>
-                        <div class="metric-label-small">Peak Power</div>
-                    </div>
-                    ''', unsafe_allow_html=True)
+                # Power consumption
+                fig.add_trace(
+                    go.Scatter(
+                        x=data['Time_Months'],
+                        y=data['Heating_Power'],
+                        mode='lines',
+                        name='Power',
+                        line=dict(color=selected_colors[0], width=3),
+                        fill='tozeroy',
+                        fillcolor=f'rgba({int(selected_colors[0][1:3], 16)}, {int(selected_colors[0][3:5], 16)}, {int(selected_colors[0][5:7], 16)}, 0.2)'
+                    ),
+                    row=1, col=1
+                )
                 
-                with col2:
-                    st.markdown(f'''
-                    <div class="metric-card-small">
-                        <div class="metric-value-small">{stats['avg_power']:.0f}W</div>
-                        <div class="metric-label-small">Avg Power</div>
-                    </div>
-                    ''', unsafe_allow_html=True)
+                # Temperature
+                fig.add_trace(
+                    go.Scatter(
+                        x=data['Time_Months'],
+                        y=data['Indoor_Temperature'],
+                        mode='lines',
+                        name='Temperature',
+                        line=dict(color=selected_colors[1], width=3)
+                    ),
+                    row=2, col=1
+                )
                 
-                with col3:
-                    st.markdown(f'''
-                    <div class="metric-card-small">
-                        <div class="metric-value-small">{stats['annual_consumption']:.0f}</div>
-                        <div class="metric-label-small">Annual kWh</div>
-                    </div>
-                    ''', unsafe_allow_html=True)
+                # Add comfort zone
+                fig.add_hrect(y0=20, y1=24, 
+                            fillcolor="rgba(0,255,0,0.1)", 
+                            line_width=0,
+                            row=2, col=1)
                 
-                with col4:
-                    st.markdown(f'''
-                    <div class="metric-card-small">
-                        <div class="metric-value-small">{stats['avg_temp']:.1f}°C</div>
-                        <div class="metric-label-small">Avg Temp</div>
-                    </div>
-                    ''', unsafe_allow_html=True)
+                # Update layout
+                fig.update_xaxes(
+                    tickvals=list(range(1, 13)),
+                    ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    gridcolor='rgba(255,255,255,0.1)' if show_grid else 'rgba(0,0,0,0)'
+                )
                 
-                # Detailed charts for single building
+                fig.update_yaxes(
+                    gridcolor='rgba(255,255,255,0.1)' if show_grid else 'rgba(0,0,0,0)'
+                )
+                
+                layout = get_plot_layout(f"{building_name} - Annual Performance", chart_height * 1.5)
+                fig.update_layout(**layout)
+                
+                st.plotly_chart(fig, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            
+            with tabs[1]:  # Analytics
+                st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
+                
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    fig_power = px.line(
-                        data, 
-                        x='Time_Months', 
+                    # Scatter plot
+                    fig_scatter = px.scatter(
+                        data,
+                        x='Indoor_Temperature',
                         y='Heating_Power',
-                        title=f'🔥 {building_name} - Heating Power',
-                        labels={'Time_Months': 'Month', 'Heating_Power': 'Power (W)'},
-                        color_discrete_sequence=[px.colors.sequential.__dict__[color_theme][4]]
+                        color='Time_Months',
+                        title='Temperature vs Power Correlation',
+                        labels={'Indoor_Temperature': 'Temperature (°C)', 'Heating_Power': 'Power (W)'},
+                        color_continuous_scale=selected_colors
                     )
                     
-                    fig_power.update_xaxes(
-                        tickvals=list(range(1, 13)),
-                        ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-                    )
-                    fig_power.update_layout(height=chart_height, margin=dict(l=20, r=20, t=40, b=20))
-                    st.plotly_chart(fig_power, use_container_width=True)
+                    layout = get_plot_layout('Temperature vs Power Correlation', chart_height)
+                    fig_scatter.update_layout(**layout)
+                    fig_scatter.update_traces(marker=dict(size=8, opacity=0.7))
+                    
+                    st.plotly_chart(fig_scatter, use_container_width=True)
                 
                 with col2:
-                    fig_temp = px.line(
-                        data, 
-                        x='Time_Months', 
-                        y='Indoor_Temperature',
-                        title=f'🌡️ {building_name} - Temperature',
-                        labels={'Time_Months': 'Month', 'Indoor_Temperature': 'Temperature (°C)'},
-                        color_discrete_sequence=[px.colors.sequential.__dict__[color_theme][6]]
-                    )
+                    # Distribution plot
+                    fig_dist = go.Figure()
                     
-                    fig_temp.add_hline(y=20, line_dash="dash", line_color="rgba(100,100,100,0.5)", annotation_text="20°C")
-                    fig_temp.add_hline(y=24, line_dash="dash", line_color="rgba(100,100,100,0.5)", annotation_text="24°C")
+                    fig_dist.add_trace(go.Histogram(
+                        x=data['Heating_Power'],
+                        name='Power Distribution',
+                        marker_color=selected_colors[0],
+                        opacity=0.7,
+                        nbinsx=30
+                    ))
                     
-                    fig_temp.update_xaxes(
-                        tickvals=list(range(1, 13)),
-                        ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-                    )
-                    fig_temp.update_layout(height=chart_height, margin=dict(l=20, r=20, t=40, b=20))
-                    st.plotly_chart(fig_temp, use_container_width=True)
+                    layout = get_plot_layout('Power Distribution', chart_height)
+                    layout['xaxis']['title'] = 'Power (W)'
+                    layout['yaxis']['title'] = 'Frequency'
+                    fig_dist.update_layout(**layout)
+                    
+                    st.plotly_chart(fig_dist, use_container_width=True)
                 
                 st.markdown('</div>', unsafe_allow_html=True)
             
-            with tab2:
+            with tabs[2]:  # Insights
                 st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
                 
-                # Single building correlation analysis
-                fig_corr = px.scatter(
-                    data,
-                    x='Indoor_Temperature',
-                    y='Heating_Power',
-                    color='Time_Months',
-                    title=f'🔄 {building_name} - Temperature vs Power Correlation',
-                    labels={'Indoor_Temperature': 'Temperature (°C)', 'Heating_Power': 'Power (W)'},
-                    color_continuous_scale=color_theme
-                )
-                fig_corr.update_layout(height=chart_height)
-                st.plotly_chart(fig_corr, use_container_width=True)
+                # Key insights
+                col1, col2 = st.columns(2)
                 
-                # Monthly breakdown
+                with col1:
+                    st.markdown(f'''
+                    <div class="info-box">
+                        <h4>🔥 Energy Performance</h4>
+                        <p>• Annual Consumption: <strong>{stats['annual_consumption']:,.0f} kWh</strong></p>
+                        <p>• Peak Demand: <strong>{stats['max_power']:,.0f} W</strong></p>
+                        <p>• Average Load: <strong>{stats['avg_power']:,.0f} W</strong></p>
+                        <p>• Load Factor: <strong>{(stats['avg_power']/stats['max_power']*100):.1f}%</strong></p>
+                    </div>
+                    ''', unsafe_allow_html=True)
+                
+                with col2:
+                    st.markdown(f'''
+                    <div class="info-box">
+                        <h4>🌡️ Thermal Performance</h4>
+                        <p>• Average Temperature: <strong>{stats['avg_temp']:.1f}°C</strong></p>
+                        <p>• Temperature Range: <strong>{stats['temp_range']:.1f}°C</strong></p>
+                        <p>• Min Temperature: <strong>{stats['min_temp']:.1f}°C</strong></p>
+                        <p>• Max Temperature: <strong>{stats['max_temp']:.1f}°C</strong></p>
+                    </div>
+                    ''', unsafe_allow_html=True)
+                
+                # Efficiency metrics
+                efficiency_score = (1 - (stats['annual_consumption'] / 50000)) * 100  # Assuming 50000 kWh as baseline
+                comfort_score = 100 - (stats['temp_range'] * 2)  # Lower range = better comfort
+                
+                st.markdown(f'''
+                <div class="info-box" style="margin-top: 2rem;">
+                    <h4>🎯 Performance Scores</h4>
+                    <p>• Energy Efficiency Score: <strong>{efficiency_score:.1f}/100</strong></p>
+                    <p>• Thermal Comfort Score: <strong>{comfort_score:.1f}/100</strong></p>
+                    <p>• Overall Rating: <strong>{(efficiency_score + comfort_score)/2:.1f}/100</strong></p>
+                </div>
+                ''', unsafe_allow_html=True)
+                
+                st.markdown('</div>', unsafe_allow_html=True)
+            
+            with tabs[3]:  # Monthly Analysis
+                st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
+                
+                # Calculate monthly statistics
                 monthly_data = []
                 months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
                 
@@ -476,415 +802,579 @@ if selected_files:
                     month_end = i + 1.5
                     mask = (data['Time_Months'] >= month_start) & (data['Time_Months'] < month_end)
                     if np.any(mask):
+                        month_power = data[mask]['Heating_Power'].values
+                        month_temp = data[mask]['Indoor_Temperature'].values
                         monthly_data.append({
                             'Month': months[i],
-                            'Avg_Power': data[mask]['Heating_Power'].mean(),
-                            'Avg_Temp': data[mask]['Indoor_Temperature'].mean()
+                            'Avg_Power': np.mean(month_power),
+                            'Max_Power': np.max(month_power),
+                            'Min_Power': np.min(month_power),
+                            'Avg_Temp': np.mean(month_temp),
+                            'Energy_kWh': np.trapz(month_power, dx=1) / 1000 * 24 * 30  # Approximate monthly energy
                         })
                 
                 monthly_df = pd.DataFrame(monthly_data)
                 
-                if not monthly_df.empty:
-                    fig_monthly = px.bar(
-                        monthly_df,
-                        x='Month',
-                        y='Avg_Power',
-                        title=f'📊 {building_name} - Monthly Average Power',
-                        color='Avg_Power',
-                        color_continuous_scale=color_theme
-                    )
-                    fig_monthly.update_layout(height=chart_height//1.5)
-                    st.plotly_chart(fig_monthly, use_container_width=True)
+                # Create monthly charts
+                fig = make_subplots(
+                    rows=2, cols=2,
+                    subplot_titles=('Monthly Energy Consumption', 'Monthly Average Power', 
+                                   'Monthly Temperature', 'Power vs Temperature'),
+                    specs=[[{"secondary_y": False}, {"type": "bar"}],
+                           [{"secondary_y": False}, {"type": "scatter"}]],
+                    vertical_spacing=0.15,
+                    horizontal_spacing=0.12
+                )
                 
-                st.markdown('</div>', unsafe_allow_html=True)
-            
-            with tab3:
-                st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
+                # Monthly energy consumption
+                fig.add_trace(
+                    go.Bar(
+                        x=monthly_df['Month'],
+                        y=monthly_df['Energy_kWh'],
+                        name='Energy',
+                        marker_color=selected_colors[0],
+                        marker_line_color='rgba(255,255,255,0.3)',
+                        marker_line_width=2,
+                        opacity=0.8
+                    ),
+                    row=1, col=1
+                )
                 
-                # Single building insights
-                peak_month_idx = monthly_df['Avg_Power'].idxmax() if not monthly_df.empty else 0
-                low_month_idx = monthly_df['Avg_Power'].idxmin() if not monthly_df.empty else 0
+                # Monthly average power
+                fig.add_trace(
+                    go.Bar(
+                        x=monthly_df['Month'],
+                        y=monthly_df['Avg_Power'],
+                        name='Avg Power',
+                        marker_color=selected_colors[1],
+                        marker_line_color='rgba(255,255,255,0.3)',
+                        marker_line_width=2,
+                        opacity=0.8
+                    ),
+                    row=1, col=2
+                )
                 
-                col1, col2 = st.columns(2)
+                # Monthly temperature
+                fig.add_trace(
+                    go.Scatter(
+                        x=monthly_df['Month'],
+                        y=monthly_df['Avg_Temp'],
+                        mode='lines+markers',
+                        name='Temperature',
+                        line=dict(color=selected_colors[2], width=3),
+                        marker=dict(size=10, color=selected_colors[2], 
+                                   line=dict(color='white', width=2))
+                    ),
+                    row=2, col=1
+                )
                 
-                with col1:
-                    if not monthly_df.empty:
-                        peak_month = monthly_df.iloc[peak_month_idx]['Month']
-                        peak_power = monthly_df.iloc[peak_month_idx]['Avg_Power']
-                        st.markdown(f'''
-                        <div class="info-box-compact">
-                            <h4>🔥 Peak Demand Period</h4>
-                            <p><strong>{peak_month}</strong> shows highest demand</p>
-                            <p>Average: <strong>{peak_power:.0f}W</strong></p>
-                        </div>
-                        ''', unsafe_allow_html=True)
+                # Add comfort zone to temperature plot
+                fig.add_hrect(y0=20, y1=24, 
+                            fillcolor="rgba(0,255,0,0.1)", 
+                            line_width=0,
+                            row=2, col=1)
                 
-                with col2:
-                    if not monthly_df.empty:
-                        low_month = monthly_df.iloc[low_month_idx]['Month']
-                        low_power = monthly_df.iloc[low_month_idx]['Avg_Power']
-                        st.markdown(f'''
-                        <div class="info-box-compact">
-                            <h4>❄️ Low Demand Period</h4>
-                            <p><strong>{low_month}</strong> shows lowest demand</p>
-                            <p>Average: <strong>{low_power:.0f}W</strong></p>
-                        </div>
-                        ''', unsafe_allow_html=True)
+                # Power vs Temperature scatter
+                fig.add_trace(
+                    go.Scatter(
+                        x=monthly_df['Avg_Temp'],
+                        y=monthly_df['Avg_Power'],
+                        mode='markers+text',
+                        name='Monthly Avg',
+                        marker=dict(
+                            size=monthly_df['Energy_kWh']/50,  # Size based on energy
+                            color=list(range(12)),
+                            colorscale=selected_colors,
+                            showscale=True,
+                            colorbar=dict(title="Month", thickness=15),
+                            line=dict(color='white', width=2)
+                        ),
+                        text=monthly_df['Month'],
+                        textposition="top center"
+                    ),
+                    row=2, col=2
+                )
                 
-                # Performance summary
-                st.markdown(f'''
-                <div class="info-box-compact">
-                    <h4>📋 {building_name} Performance Summary</h4>
-                    <p>• Annual consumption: <strong>{stats['annual_consumption']:.0f} kWh</strong></p>
-                    <p>• Temperature range: <strong>{stats['temp_range']:.1f}°C</strong> (Min: {stats['min_temp']:.1f}°C, Max: {stats['max_temp']:.1f}°C)</p>
-                    <p>• Power efficiency: <strong>{stats['annual_consumption']/stats['avg_temp'] if stats['avg_temp'] > 0 else 0:.1f} kWh/°C</strong></p>
-                </div>
-                ''', unsafe_allow_html=True)
+                layout = get_plot_layout(f"{building_name} - Monthly Analysis", chart_height * 1.8)
+                fig.update_layout(**layout)
+                
+                # Update axes
+                fig.update_xaxes(gridcolor='rgba(255,255,255,0.1)' if show_grid else 'rgba(0,0,0,0)')
+                fig.update_yaxes(gridcolor='rgba(255,255,255,0.1)' if show_grid else 'rgba(0,0,0,0)')
+                
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Monthly summary table
+                st.markdown("### 📊 Monthly Summary Statistics")
+                monthly_display = monthly_df[['Month', 'Energy_kWh', 'Avg_Power', 'Avg_Temp']].copy()
+                monthly_display['Energy_kWh'] = monthly_display['Energy_kWh'].round(0)
+                monthly_display['Avg_Power'] = monthly_display['Avg_Power'].round(0)
+                monthly_display['Avg_Temp'] = monthly_display['Avg_Temp'].round(1)
+                
+                st.dataframe(
+                    monthly_display.style.background_gradient(
+                        subset=['Energy_kWh', 'Avg_Power', 'Avg_Temp'],
+                        cmap='viridis',
+                        low=0.3,
+                        high=0.7
+                    ),
+                    use_container_width=True
+                )
                 
                 st.markdown('</div>', unsafe_allow_html=True)
         
+        # Multiple Buildings Analysis
         else:
-            # Multiple buildings - comparison and overview tabs
-            tab1, tab2, tab3, tab4 = st.tabs(["📈 Performance Charts", "🔄 Comparison", "📊 Analytics", "🏆 Rankings"])
-        
-            # TAB 1: PERFORMANCE CHARTS (for multiple buildings)
-            with tab1:
+            with tabs[0]:  # Overview
                 st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
                 
-                # Side-by-side charts
-                col1, col2 = st.columns(2)
+                # Create comparison charts
+                fig = make_subplots(
+                    rows=2, cols=2,
+                    subplot_titles=('Heating Power Profiles', 'Temperature Profiles', 
+                                   'Annual Energy Consumption', 'Peak Power Demand'),
+                    specs=[[{"secondary_y": False}, {"secondary_y": False}],
+                           [{"type": "bar"}, {"type": "bar"}]],
+                    vertical_spacing=0.15,
+                    horizontal_spacing=0.12
+                )
                 
-                with col1:
-                    # Heating Power Chart
-                    fig_power = go.Figure()
-                    colors = px.colors.qualitative.Set3 if color_theme == "Set3" else getattr(px.colors.sequential, color_theme)
-                    
-                    for i, (building_name, data) in enumerate(building_data.items()):
-                        color = colors[i % len(colors)] if isinstance(colors, list) else colors[min(i * 2, len(colors) - 1)]
-                        fig_power.add_trace(go.Scatter(
+                # Power profiles
+                for i, (building_name, data) in enumerate(building_data.items()):
+                    fig.add_trace(
+                        go.Scatter(
                             x=data['Time_Months'],
                             y=data['Heating_Power'],
                             mode='lines',
                             name=building_name,
-                            line=dict(color=color, width=2)
-                        ))
-                    
-                    fig_power.update_layout(
-                        title='🔥 Heating Power Comparison',
-                        xaxis_title='Month',
-                        yaxis_title='Power (W)',
-                        height=chart_height,
-                        margin=dict(l=20, r=20, t=40, b=20),
-                        xaxis=dict(
-                            tickvals=list(range(1, 13)),
-                            ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                            line=dict(color=selected_colors[i % len(selected_colors)], width=2.5),
+                            opacity=0.8
                         ),
-                        legend=dict(x=0, y=1, bgcolor="rgba(255,255,255,0.1)")
+                        row=1, col=1
                     )
-                    
-                    st.plotly_chart(fig_power, use_container_width=True)
                 
-                with col2:
-                    # Temperature Chart
-                    fig_temp = go.Figure()
-                    
-                    for i, (building_name, data) in enumerate(building_data.items()):
-                        color = colors[i % len(colors)] if isinstance(colors, list) else colors[min(i * 2, len(colors) - 1)]
-                        fig_temp.add_trace(go.Scatter(
+                # Temperature profiles
+                for i, (building_name, data) in enumerate(building_data.items()):
+                    fig.add_trace(
+                        go.Scatter(
                             x=data['Time_Months'],
                             y=data['Indoor_Temperature'],
                             mode='lines',
                             name=building_name,
-                            line=dict(color=color, width=2)
+                            line=dict(color=selected_colors[i % len(selected_colors)], width=2.5),
+                            opacity=0.8,
+                            showlegend=False
+                        ),
+                        row=1, col=2
+                    )
+                
+                # Add comfort zone
+                fig.add_hrect(y0=20, y1=24, 
+                            fillcolor="rgba(0,255,0,0.1)", 
+                            line_width=0,
+                            row=1, col=2)
+                
+                # Annual consumption bar chart
+                consumption_data = [(name, stats['annual_consumption']) 
+                                  for name, stats in building_stats.items()]
+                consumption_data.sort(key=lambda x: x[1])
+                
+                fig.add_trace(
+                    go.Bar(
+                        x=[item[0] for item in consumption_data],
+                        y=[item[1] for item in consumption_data],
+                        name='Annual kWh',
+                        marker=dict(
+                            color=[item[1] for item in consumption_data],
+                            colorscale=selected_colors,
+                            line=dict(color='rgba(255,255,255,0.3)', width=2)
+                        ),
+                        showlegend=False
+                    ),
+                    row=2, col=1
+                )
+                
+                # Peak power bar chart
+                peak_data = [(name, stats['max_power']) 
+                            for name, stats in building_stats.items()]
+                peak_data.sort(key=lambda x: x[1])
+                
+                fig.add_trace(
+                    go.Bar(
+                        x=[item[0] for item in peak_data],
+                        y=[item[1] for item in peak_data],
+                        name='Peak Power',
+                        marker=dict(
+                            color=[item[1] for item in peak_data],
+                            colorscale=selected_colors,
+                            line=dict(color='rgba(255,255,255,0.3)', width=2)
+                        ),
+                        showlegend=False
+                    ),
+                    row=2, col=2
+                )
+                
+                # Update layout
+                layout = get_plot_layout("Building Portfolio Overview", chart_height * 1.8)
+                fig.update_layout(**layout)
+                
+                # Update x-axes for time series
+                fig.update_xaxes(
+                    tickvals=list(range(1, 13)),
+                    ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    row=1, col=1
+                )
+                fig.update_xaxes(
+                    tickvals=list(range(1, 13)),
+                    ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    row=1, col=2
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            
+            with tabs[1]:  # Comparison
+                st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
+                
+                # Create metrics comparison
+                metrics_data = []
+                for building_name, stats in building_stats.items():
+                    metrics_data.append({
+                        'Building': building_name,
+                        'Annual_kWh': stats['annual_consumption'],
+                        'Peak_Power_W': stats['max_power'],
+                        'Avg_Power_W': stats['avg_power'],
+                        'Avg_Temp_C': stats['avg_temp'],
+                        'Temp_Range_C': stats['temp_range'],
+                        'Load_Factor_%': (stats['avg_power']/stats['max_power']*100)
+                    })
+                
+                metrics_df = pd.DataFrame(metrics_data)
+                
+                # Radar chart comparison
+                if len(selected_buildings) <= 6:  # Limit radar chart to 6 buildings
+                    fig_radar = go.Figure()
+                    
+                    # Normalize metrics for radar chart
+                    metrics_to_plot = ['Annual_kWh', 'Peak_Power_W', 'Avg_Power_W', 'Load_Factor_%', 'Temp_Range_C']
+                    normalized_df = metrics_df.copy()
+                    
+                    for metric in metrics_to_plot:
+                        max_val = normalized_df[metric].max()
+                        min_val = normalized_df[metric].min()
+                        if max_val > min_val:
+                            normalized_df[metric] = (normalized_df[metric] - min_val) / (max_val - min_val) * 100
+                        else:
+                            normalized_df[metric] = 50
+                    
+                    for i, building in enumerate(normalized_df['Building']):
+                        values = [normalized_df.loc[normalized_df['Building'] == building, metric].values[0] 
+                                 for metric in metrics_to_plot]
+                        
+                        fig_radar.add_trace(go.Scatterpolar(
+                            r=values + [values[0]],  # Close the polygon
+                            theta=['Energy', 'Peak Power', 'Avg Power', 'Load Factor', 'Temp Stability', 'Energy'],
+                            fill='toself',
+                            name=building,
+                            line=dict(color=selected_colors[i % len(selected_colors)], width=2),
+                            fillcolor=f'rgba({int(selected_colors[i % len(selected_colors)][1:3], 16)}, '
+                                     f'{int(selected_colors[i % len(selected_colors)][3:5], 16)}, '
+                                     f'{int(selected_colors[i % len(selected_colors)][5:7], 16)}, 0.2)'
                         ))
                     
-                    # Add comfort zone
-                    fig_temp.add_hline(y=20, line_dash="dash", line_color="rgba(255,255,255,0.5)", annotation_text="20°C")
-                    fig_temp.add_hline(y=24, line_dash="dash", line_color="rgba(255,255,255,0.5)", annotation_text="24°C")
-                    
-                    fig_temp.update_layout(
-                        title='🌡️ Temperature Comparison',
-                        xaxis_title='Month',
-                        yaxis_title='Temperature (°C)',
-                        height=chart_height,
-                        margin=dict(l=20, r=20, t=40, b=20),
-                        xaxis=dict(
-                            tickvals=list(range(1, 13)),
-                            ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                    layout = get_plot_layout("Multi-Metric Performance Comparison", chart_height)
+                    layout['polar'] = dict(
+                        radialaxis=dict(
+                            visible=True,
+                            range=[0, 100],
+                            gridcolor='rgba(255,255,255,0.1)',
+                            tickfont=dict(color='white')
                         ),
-                        legend=dict(x=0, y=1, bgcolor="rgba(255,255,255,0.1)")
+                        angularaxis=dict(
+                            gridcolor='rgba(255,255,255,0.1)',
+                            tickfont=dict(color='white')
+                        ),
+                        bgcolor='rgba(0,0,0,0)'
                     )
+                    fig_radar.update_layout(**layout)
                     
-                    st.plotly_chart(fig_temp, use_container_width=True)
+                    st.plotly_chart(fig_radar, use_container_width=True)
+                
+                # Comparison heatmap
+                st.markdown("### 🔥 Performance Heatmap")
+                
+                # Prepare data for heatmap
+                heatmap_metrics = ['Annual_kWh', 'Peak_Power_W', 'Avg_Power_W', 'Avg_Temp_C', 'Load_Factor_%']
+                heatmap_data = metrics_df.set_index('Building')[heatmap_metrics]
+                
+                # Normalize for better visualization
+                heatmap_normalized = (heatmap_data - heatmap_data.min()) / (heatmap_data.max() - heatmap_data.min())
+                
+                fig_heatmap = go.Figure(data=go.Heatmap(
+                    z=heatmap_normalized.T.values,
+                    x=heatmap_normalized.index,
+                    y=['Annual Energy', 'Peak Power', 'Avg Power', 'Avg Temperature', 'Load Factor'],
+                    colorscale=selected_colors if len(selected_colors) > 2 else 'Viridis',
+                    text=heatmap_data.T.values.round(1),
+                    texttemplate='%{text}',
+                    textfont={"size": 10},
+                    hoverongaps=False
+                ))
+                
+                layout = get_plot_layout("Normalized Performance Metrics", 400)
+                fig_heatmap.update_layout(**layout)
+                
+                st.plotly_chart(fig_heatmap, use_container_width=True)
+                
+                # Detailed comparison table
+                st.markdown("### 📋 Detailed Metrics Comparison")
+                
+                # Format the dataframe for display
+                display_df = metrics_df.copy()
+                display_df['Annual_kWh'] = display_df['Annual_kWh'].round(0).astype(int)
+                display_df['Peak_Power_W'] = display_df['Peak_Power_W'].round(0).astype(int)
+                display_df['Avg_Power_W'] = display_df['Avg_Power_W'].round(0).astype(int)
+                display_df['Avg_Temp_C'] = display_df['Avg_Temp_C'].round(1)
+                display_df['Temp_Range_C'] = display_df['Temp_Range_C'].round(1)
+                display_df['Load_Factor_%'] = display_df['Load_Factor_%'].round(1)
+                
+                # Rename columns for display
+                display_df.columns = ['Building', 'Annual kWh', 'Peak W', 'Avg W', 'Avg °C', 'Range °C', 'Load %']
+                
+                st.dataframe(
+                    display_df.style.background_gradient(
+                        subset=['Annual kWh', 'Peak W', 'Avg W', 'Load %'],
+                        cmap='RdYlGn_r',
+                        low=0.3,
+                        high=0.7
+                    ).background_gradient(
+                        subset=['Range °C'],
+                        cmap='RdYlGn_r',
+                        low=0.3,
+                        high=0.7
+                    ),
+                    use_container_width=True
+                )
                 
                 st.markdown('</div>', unsafe_allow_html=True)
             
-            # TAB 2: COMPARISON
-            with tab2:
+            with tabs[2]:  # Analytics
                 st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
                 
-                if len(building_data) >= 2:
-                    # Performance metrics comparison
-                    metrics_data = []
-                    for building_name, stats in building_stats.items():
-                        metrics_data.append({
-                            'Building': building_name,
-                            'Peak Power (W)': stats['max_power'],
-                            'Avg Power (W)': stats['avg_power'],
-                            'Annual kWh': stats['annual_consumption'],
-                            'Avg Temp (°C)': stats['avg_temp']
-                        })
-                    
-                    metrics_df = pd.DataFrame(metrics_data)
-                    
-                    # Side-by-side comparison charts
-                    col1, col2 = st.columns(2)
-                    
-                    with col1:
-                        # Bar chart comparison
-                        fig_bar = px.bar(
-                            metrics_df,
-                            x='Building',
-                            y='Annual kWh',
-                            title='📊 Annual Consumption Comparison',
-                            color='Annual kWh',
-                            color_continuous_scale=color_theme,
-                            height=chart_height//1.2
-                        )
-                        fig_bar.update_layout(margin=dict(l=20, r=20, t=40, b=20))
-                        st.plotly_chart(fig_bar, use_container_width=True)
-                    
-                    with col2:
-                        # Radar chart for multi-metric comparison
-                        fig_radar = go.Figure()
-                        
-                        # Normalize metrics for radar chart
-                        normalized_df = metrics_df.copy()
-                        for col in ['Peak Power (W)', 'Avg Power (W)', 'Annual kWh', 'Avg Temp (°C)']:
-                            max_val = normalized_df[col].max()
-                            if max_val > 0:
-                                normalized_df[col] = normalized_df[col] / max_val * 100
-                        
-                        for i, building in enumerate(normalized_df['Building']):
-                            fig_radar.add_trace(go.Scatterpolar(
-                                r=[normalized_df.iloc[i]['Peak Power (W)'],
-                                   normalized_df.iloc[i]['Avg Power (W)'],
-                                   normalized_df.iloc[i]['Annual kWh'],
-                                   normalized_df.iloc[i]['Avg Temp (°C)']],
-                                theta=['Peak Power', 'Avg Power', 'Annual kWh', 'Avg Temp'],
-                                fill='toself',
-                                name=building,
-                                line_color=colors[i % len(colors)] if isinstance(colors, list) else colors[min(i * 2, len(colors) - 1)]
-                            ))
-                        
-                        fig_radar.update_layout(
-                            polar=dict(
-                                radialaxis=dict(
-                                    visible=True,
-                                    range=[0, 100]
-                                )),
-                            title='🎯 Multi-Metric Comparison',
-                            height=chart_height//1.2,
-                            margin=dict(l=20, r=20, t=40, b=20)
-                        )
-                        st.plotly_chart(fig_radar, use_container_width=True)
-                    
-                    # Comparison table
-                    st.markdown("### 📋 Detailed Comparison")
-                    st.dataframe(metrics_df.set_index('Building'), use_container_width=True)
-                    
-                else:
-                    st.info("📝 Select multiple buildings for comparison analysis")
+                # Combined correlation analysis
+                all_data = []
+                for building_name, data in building_data.items():
+                    temp_data = data.copy()
+                    temp_data['Building'] = building_name
+                    all_data.append(temp_data)
                 
-                st.markdown('</div>', unsafe_allow_html=True)
-            
-            # TAB 3: ANALYTICS
-            with tab3:
-                st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
+                combined_df = pd.concat(all_data, ignore_index=True)
                 
+                # Create analytics visualizations
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    # Correlation analysis
-                    if len(building_data) >= 1:
-                        # Combine all building data for correlation
-                        all_data = []
-                        for building_name, data in building_data.items():
-                            temp_data = data.copy()
-                            temp_data['Building'] = building_name
-                            all_data.append(temp_data)
-                        
-                        combined_df = pd.concat(all_data, ignore_index=True)
-                        
-                        fig_corr = px.scatter(
-                            combined_df,
-                            x='Indoor_Temperature',
-                            y='Heating_Power',
-                            color='Building',
-                            title='🔄 Temperature vs Power Correlation',
-                            labels={'Indoor_Temperature': 'Temperature (°C)', 'Heating_Power': 'Power (W)'},
-                            color_discrete_sequence=px.colors.qualitative.Set3,
-                            height=chart_height//1.2
+                    # Correlation scatter plot
+                    fig_corr = px.scatter(
+                        combined_df,
+                        x='Indoor_Temperature',
+                        y='Heating_Power',
+                        color='Building',
+                        title='Temperature vs Power Correlation (All Buildings)',
+                        labels={'Indoor_Temperature': 'Temperature (°C)', 'Heating_Power': 'Power (W)'},
+                        color_discrete_sequence=selected_colors,
+                        opacity=0.6
+                    )
+                    
+                    # Add trendline
+                    fig_corr.add_trace(
+                        go.Scatter(
+                            x=combined_df['Indoor_Temperature'].sort_values(),
+                            y=np.poly1d(np.polyfit(combined_df['Indoor_Temperature'], 
+                                                   combined_df['Heating_Power'], 1))(combined_df['Indoor_Temperature'].sort_values()),
+                            mode='lines',
+                            name='Trend',
+                            line=dict(color='white', width=2, dash='dash')
                         )
-                        fig_corr.update_layout(margin=dict(l=20, r=20, t=40, b=20))
-                        st.plotly_chart(fig_corr, use_container_width=True)
+                    )
+                    
+                    layout = get_plot_layout('', chart_height)
+                    fig_corr.update_layout(**layout)
+                    
+                    st.plotly_chart(fig_corr, use_container_width=True)
                 
                 with col2:
-                    # Distribution analysis
-                    consumption_values = [stats['annual_consumption'] for stats in building_stats.values()]
-                    building_names = list(building_stats.keys())
+                    # Distribution comparison
+                    fig_dist = go.Figure()
                     
-                    fig_dist = px.box(
-                        y=consumption_values,
-                        title='📈 Consumption Distribution',
-                        labels={'y': 'Annual Consumption (kWh)'},
-                        height=chart_height//1.2
-                    )
-                    fig_dist.update_layout(margin=dict(l=20, r=20, t=40, b=20))
+                    for i, (building_name, data) in enumerate(building_data.items()):
+                        fig_dist.add_trace(go.Box(
+                            y=data['Heating_Power'],
+                            name=building_name,
+                            marker_color=selected_colors[i % len(selected_colors)],
+                            boxmean='sd'  # Show mean and standard deviation
+                        ))
+                    
+                    layout = get_plot_layout('Power Distribution by Building', chart_height)
+                    layout['yaxis']['title'] = 'Power (W)'
+                    fig_dist.update_layout(**layout)
+                    
                     st.plotly_chart(fig_dist, use_container_width=True)
                 
-                # Heatmap
-                if len(building_data) >= 2:
-                    st.markdown("### 🔥 Performance Heatmap")
-                    
-                    heatmap_data = []
-                    for building_name, stats in building_stats.items():
-                        heatmap_data.append([
-                            stats['max_power'],
-                            stats['avg_power'],
-                            stats['annual_consumption'],
-                            stats['avg_temp']
-                        ])
-                    
-                    heatmap_df = pd.DataFrame(
-                        heatmap_data,
-                        columns=['Peak Power', 'Avg Power', 'Annual kWh', 'Avg Temp'],
-                        index=list(building_stats.keys())
-                    )
-                    
-                    # Normalize for better visualization
-                    heatmap_normalized = heatmap_df.div(heatmap_df.max())
-                    
-                    fig_heatmap = px.imshow(
-                        heatmap_normalized.T,
-                        color_continuous_scale=color_theme,
-                        title='🏢 Normalized Performance Heatmap',
-                        labels=dict(x="Building", y="Metric", color="Normalized Value"),
-                        height=300
-                    )
-                    fig_heatmap.update_layout(margin=dict(l=20, r=20, t=40, b=20))
-                    st.plotly_chart(fig_heatmap, use_container_width=True)
+                # Time-based analysis
+                st.markdown("### 📅 Seasonal Analysis")
+                
+                # Calculate seasonal averages
+                seasons = {
+                    'Winter': [12, 1, 2],
+                    'Spring': [3, 4, 5],
+                    'Summer': [6, 7, 8],
+                    'Fall': [9, 10, 11]
+                }
+                
+                seasonal_data = []
+                for building_name, data in building_data.items():
+                    for season, months in seasons.items():
+                        mask = data['Time_Months'].apply(lambda x: int(x) in months)
+                        if mask.any():
+                            seasonal_data.append({
+                                'Building': building_name,
+                                'Season': season,
+                                'Avg_Power': data[mask]['Heating_Power'].mean(),
+                                'Avg_Temp': data[mask]['Indoor_Temperature'].mean()
+                            })
+                
+                seasonal_df = pd.DataFrame(seasonal_data)
+                
+                # Seasonal comparison chart
+                fig_seasonal = px.bar(
+                    seasonal_df,
+                    x='Season',
+                    y='Avg_Power',
+                    color='Building',
+                    barmode='group',
+                    title='Seasonal Average Power Consumption',
+                    color_discrete_sequence=selected_colors
+                )
+                
+                layout = get_plot_layout('', 400)
+                fig_seasonal.update_layout(**layout)
+                
+                st.plotly_chart(fig_seasonal, use_container_width=True)
                 
                 st.markdown('</div>', unsafe_allow_html=True)
             
-            # TAB 4: RANKINGS
-            with tab4:
+            with tabs[3]:  # Rankings
                 st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
                 
-                if len(building_data) >= 2:
-                    # Performance rankings
-                    col1, col2 = st.columns(2)
+                # Calculate rankings
+                rankings = {}
+                
+                # Energy efficiency ranking (lower is better)
+                energy_ranking = sorted(building_stats.items(), key=lambda x: x[1]['annual_consumption'])
+                rankings['Energy Efficiency'] = [(b[0], i+1, f"{b[1]['annual_consumption']:,.0f} kWh") 
+                                               for i, b in enumerate(energy_ranking)]
+                
+                # Peak demand ranking (lower is better)
+                peak_ranking = sorted(building_stats.items(), key=lambda x: x[1]['max_power'])
+                rankings['Peak Demand'] = [(b[0], i+1, f"{b[1]['max_power']:,.0f} W") 
+                                         for i, b in enumerate(peak_ranking)]
+                
+                # Temperature stability ranking (lower range is better)
+                temp_ranking = sorted(building_stats.items(), key=lambda x: x[1]['temp_range'])
+                rankings['Temperature Stability'] = [(b[0], i+1, f"{b[1]['temp_range']:.1f}°C range") 
+                                                    for i, b in enumerate(temp_ranking)]
+                
+                # Load factor ranking (higher is better)
+                load_ranking = sorted(building_stats.items(), 
+                                    key=lambda x: x[1]['avg_power']/x[1]['max_power'], 
+                                    reverse=True)
+                rankings['Load Factor'] = [(b[0], i+1, f"{(b[1]['avg_power']/b[1]['max_power']*100):.1f}%") 
+                                         for i, b in enumerate(load_ranking)]
+                
+                # Display rankings
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    # Best performers
+                    st.markdown("### 🏆 Top Performers")
                     
-                    with col1:
-                        # Most efficient
-                        best_efficiency = min(building_stats.items(), key=lambda x: x[1]['annual_consumption'])
+                    for category, ranking in list(rankings.items())[:2]:
+                        winner = ranking[0]
                         st.markdown(f'''
-                        <div class="info-box-compact">
-                            <h4>🥇 Most Efficient Building</h4>
-                            <p><strong>{best_efficiency[0]}</strong></p>
-                            <p>Annual: <strong>{best_efficiency[1]['annual_consumption']:.0f} kWh</strong></p>
+                        <div class="info-box">
+                            <h4>🥇 {category} Champion</h4>
+                            <p><strong>{winner[0]}</strong></p>
+                            <p>Performance: <strong>{winner[2]}</strong></p>
                         </div>
                         ''', unsafe_allow_html=True)
-                        
-                        # Highest peak demand
-                        highest_peak = max(building_stats.items(), key=lambda x: x[1]['max_power'])
-                        st.markdown(f'''
-                        <div class="info-box-compact">
-                            <h4>⚡ Highest Peak Demand</h4>
-                            <p><strong>{highest_peak[0]}</strong></p>
-                            <p>Peak: <strong>{highest_peak[1]['max_power']:.0f} W</strong></p>
-                        </div>
-                        ''', unsafe_allow_html=True)
+                
+                with col2:
+                    # Areas for improvement
+                    st.markdown("### 📈 Improvement Opportunities")
                     
-                    with col2:
-                        # Least efficient
-                        worst_efficiency = max(building_stats.items(), key=lambda x: x[1]['annual_consumption'])
-                        st.markdown(f'''
-                        <div class="info-box-compact">
-                            <h4>⚠️ Needs Improvement</h4>
-                            <p><strong>{worst_efficiency[0]}</strong></p>
-                            <p>Annual: <strong>{worst_efficiency[1]['annual_consumption']:.0f} kWh</strong></p>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                        
-                        # Best temperature control
-                        best_temp = min(building_stats.items(), key=lambda x: x[1]['temp_range'])
-                        st.markdown(f'''
-                        <div class="info-box-compact">
-                            <h4>🌡️ Best Temperature Control</h4>
-                            <p><strong>{best_temp[0]}</strong></p>
-                            <p>Range: <strong>{best_temp[1]['temp_range']:.1f}°C</strong></p>
-                        </div>
-                        ''', unsafe_allow_html=True)
+                    for category, ranking in list(rankings.items())[2:]:
+                        if len(ranking) > 1:
+                            needs_improvement = ranking[-1]
+                            st.markdown(f'''
+                            <div class="info-box">
+                                <h4>⚠️ {category} - Needs Attention</h4>
+                                <p><strong>{needs_improvement[0]}</strong></p>
+                                <p>Current: <strong>{needs_improvement[2]}</strong></p>
+                            </div>
+                            ''', unsafe_allow_html=True)
+                
+                # Overall ranking table
+                st.markdown("### 📊 Complete Rankings")
+                
+                # Create ranking dataframe
+                ranking_data = []
+                for building in building_stats.keys():
+                    row = {'Building': building}
+                    for category, ranking in rankings.items():
+                        for b, rank, _ in ranking:
+                            if b == building:
+                                row[category] = rank
+                                break
+                    ranking_data.append(row)
+                
+                ranking_df = pd.DataFrame(ranking_data)
+                ranking_df['Overall Score'] = ranking_df[list(rankings.keys())].mean(axis=1)
+                ranking_df = ranking_df.sort_values('Overall Score')
+                ranking_df['Overall Rank'] = range(1, len(ranking_df) + 1)
+                
+                # Display with color coding
+                st.dataframe(
+                    ranking_df.style.background_gradient(
+                        subset=list(rankings.keys()) + ['Overall Score'],
+                        cmap='RdYlGn_r',
+                        low=0.3,
+                        high=0.7
+                    ).format({
+                        'Overall Score': '{:.1f}',
+                        **{col: '{:.0f}' for col in rankings.keys()}
+                    }),
+                    use_container_width=True
+                )
+                
+                # Savings potential
+                best_performer = energy_ranking[0]
+                worst_performer = energy_ranking[-1]
+                
+                if len(energy_ranking) > 1:
+                    potential_savings = worst_performer[1]['annual_consumption'] - best_performer[1]['annual_consumption']
+                    percentage_savings = (potential_savings / worst_performer[1]['annual_consumption']) * 100
                     
-                    # Ranking table
-                    st.markdown("### 🏆 Complete Rankings")
-                    
-                    ranking_df = pd.DataFrame({
-                        'Building': list(building_stats.keys()),
-                        'Efficiency Rank': range(1, len(building_stats) + 1),
-                        'Annual kWh': [stats['annual_consumption'] for stats in building_stats.values()],
-                        'Peak Power (W)': [stats['max_power'] for stats in building_stats.values()],
-                        'Avg Temp (°C)': [stats['avg_temp'] for stats in building_stats.values()]
-                    }).sort_values('Annual kWh')
-                    
-                    ranking_df['Efficiency Rank'] = range(1, len(ranking_df) + 1)
-                    
-                    st.dataframe(ranking_df.set_index('Efficiency Rank'), use_container_width=True)
-                    
-                    # Quick insights
-                    st.markdown("### 💡 Quick Insights")
-                    potential_savings = worst_efficiency[1]['annual_consumption'] - best_efficiency[1]['annual_consumption']
                     st.markdown(f'''
-                    <div class="info-box-compact">
-                        <h4>💰 Potential Savings</h4>
-                        <p>If <strong>{worst_efficiency[0]}</strong> performed like <strong>{best_efficiency[0]}</strong>:</p>
-                        <p><strong>{potential_savings:.0f} kWh/year</strong> could be saved</p>
+                    <div class="info-box" style="margin-top: 2rem;">
+                        <h4>💰 Portfolio Optimization Potential</h4>
+                        <p>If all buildings performed at the level of <strong>{best_performer[0]}</strong>:</p>
+                        <p>• Total potential savings: <strong>{potential_savings * (len(building_stats) - 1):,.0f} kWh/year</strong></p>
+                        <p>• Average improvement potential: <strong>{percentage_savings:.1f}%</strong></p>
+                        <p>• Estimated cost savings: <strong>${potential_savings * 0.12 * (len(building_stats) - 1):,.0f}/year</strong> (at $0.12/kWh)</p>
                     </div>
                     ''', unsafe_allow_html=True)
                 
-                else:
-                    st.info("📝 Select multiple buildings to see rankings")
-                
                 st.markdown('</div>', unsafe_allow_html=True)
-    
-    else:
-        st.error("❌ No valid building data could be loaded.")
-
-else:
-    # Compact welcome screen
-    st.markdown("""
-    <div style="text-align: center; padding: 2rem;">
-        <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; backdrop-filter: blur(10px);">
-            <h2 style="color: white;">🏢 Unified Building Analytics</h2>
-            <p style="color: rgba(255,255,255,0.8);">Select buildings from the sidebar to view comprehensive analytics</p>
-            <div style="display: flex; justify-content: space-around; margin-top: 1rem;">
-                <div style="color: rgba(255,255,255,0.9);">📈 Performance</div>
-                <div style="color: rgba(255,255,255,0.9);">🔄 Comparison</div>
-                <div style="color: rgba(255,255,255,0.9);">📊 Analytics</div>
-                <div style="color: rgba(255,255,255,0.9);">🏆 Rankings</div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-# Compact footer
-st.markdown("---")
-st.markdown(
-    '<div style="text-align: center; color: rgba(255,255,255,0.6); padding: 0.5rem; font-size: 0.9rem;">'
-    '🏢 Unified Building Dashboard | Streamlit + Plotly'
-    '</div>', 
-    unsafe_allow_html=True
-)
