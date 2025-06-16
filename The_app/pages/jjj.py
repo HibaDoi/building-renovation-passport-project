@@ -33,9 +33,6 @@ mat_blobs = client.list_blobs(
     prefix="simulation/",   # ← attention au slash final
 )
 
-
-
-
 # 🎨 Custom CSS for beautiful styling
 st.markdown("""
 <style>
@@ -138,6 +135,59 @@ st.markdown("""
 # 🏢 Dashboard Header
 st.markdown('<h1 class="dashboard-title">🏢 Unified Building Performance Dashboard</h1>', unsafe_allow_html=True)
 
+# Function to download file from GCS
+@st.cache_data
+def download_file_from_gcs(blob_name):
+    """Download file from Google Cloud Storage to temporary location"""
+    try:
+        blob = bucket.blob(blob_name)
+        # Create a temporary file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mat')
+        blob.download_to_filename(temp_file.name)
+        return temp_file.name
+    except Exception as e:
+        st.error(f"Error downloading {blob_name}: {str(e)}")
+        return None
+
+# Function to load building data
+@st.cache_data
+def load_building_data(file_path):
+    """Load and process building simulation data"""
+    try:
+        r = Reader(file_path, "dymola")
+        
+        time, heat_power = r.values('multizone.PHeater[1]')
+        time_temp, indoor_temp = r.values('multizone.TAir[1]')
+        
+        seconds_per_year = 365 * 24 * 3600
+        seconds_per_month = seconds_per_year / 12.0
+        time_months = time / seconds_per_month
+        time_months_temp = time_temp / seconds_per_month
+        
+        if indoor_temp.max() > 100:
+            indoor_temp = indoor_temp - 273.15
+        
+        df = pd.DataFrame({
+            'Time_Months': time_months,
+            'Heating_Power': heat_power,
+            'Indoor_Temperature': np.interp(time_months, time_months_temp, indoor_temp)
+        })
+        
+        return df, {
+            'max_power': heat_power.max(),
+            'avg_power': heat_power.mean(),
+            'min_power': heat_power.min(),
+            'annual_consumption': np.trapz(heat_power, time) / 3600 / 1000,
+            'max_temp': indoor_temp.max(),
+            'avg_temp': indoor_temp.mean(),
+            'min_temp': indoor_temp.min(),
+            'temp_range': indoor_temp.max() - indoor_temp.min()
+        }
+        
+    except Exception as e:
+        st.error(f"Error loading data: {str(e)}")
+        return None, None
+
 # 📊 Sidebar Configuration - Compact
 with st.sidebar:
     st.markdown("## 🎛️ Controls")
@@ -145,17 +195,16 @@ with st.sidebar:
     # Building selection
     st.markdown("### 🏢 Building Selection")
     
-    
-    
     if True:
         mat_files = [blob.name for blob in mat_blobs if blob.name.endswith(".mat")]
 
-        
         if mat_files:
             # Create building mapping
             building_mapping = {}
             for file in mat_files:
-                building_name = file.replace('.mat', '').replace('_', ' ').title()
+                # Extract just the filename without the path
+                filename = os.path.basename(file)
+                building_name = filename.replace('.mat', '').replace('_', ' ').title()
                 building_mapping[building_name] = file
             
             # Analysis mode selection
@@ -210,45 +259,6 @@ with st.sidebar:
     color_theme = st.selectbox("🎨 Theme", ["Viridis", "Plasma", "Set3"], index=0)
     chart_height = st.slider("📏 Height", 300, 600, 400)
 
-# Function to load building data
-@st.cache_data
-def load_building_data(file_path):
-    """Load and process building simulation data"""
-    try:
-        r = Reader(file_path, "dymola")
-        
-        time, heat_power = r.values('multizone.PHeater[1]')
-        time_temp, indoor_temp = r.values('multizone.TAir[1]')
-        
-        seconds_per_year = 365 * 24 * 3600
-        seconds_per_month = seconds_per_year / 12.0
-        time_months = time / seconds_per_month
-        time_months_temp = time_temp / seconds_per_month
-        
-        if indoor_temp.max() > 100:
-            indoor_temp = indoor_temp - 273.15
-        
-        df = pd.DataFrame({
-            'Time_Months': time_months,
-            'Heating_Power': heat_power,
-            'Indoor_Temperature': np.interp(time_months, time_months_temp, indoor_temp)
-        })
-        
-        return df, {
-            'max_power': heat_power.max(),
-            'avg_power': heat_power.mean(),
-            'min_power': heat_power.min(),
-            'annual_consumption': np.trapz(heat_power, time) / 3600 / 1000,
-            'max_temp': indoor_temp.max(),
-            'avg_temp': indoor_temp.mean(),
-            'min_temp': indoor_temp.min(),
-            'temp_range': indoor_temp.max() - indoor_temp.min()
-        }
-        
-    except Exception as e:
-        st.error(f"Error loading data: {str(e)}")
-        return None, None
-
 # Main dashboard content
 if selected_files:
     
@@ -256,14 +266,34 @@ if selected_files:
     building_data = {}
     building_stats = {}
     
-    for file in selected_files:
-        file_path = os.path.join(mat_folder, file)
+    # Create a progress bar for loading files
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    for i, file in enumerate(selected_files):
         building_name = list(building_mapping.keys())[list(building_mapping.values()).index(file)]
         
-        data, stats = load_building_data(file_path)
-        if data is not None:
-            building_data[building_name] = data
-            building_stats[building_name] = stats
+        status_text.text(f"Loading {building_name}...")
+        progress_bar.progress((i + 1) / len(selected_files))
+        
+        # Download file from GCS
+        local_file_path = download_file_from_gcs(file)
+        
+        if local_file_path:
+            data, stats = load_building_data(local_file_path)
+            if data is not None:
+                building_data[building_name] = data
+                building_stats[building_name] = stats
+            
+            # Clean up temporary file
+            try:
+                os.unlink(local_file_path)
+            except:
+                pass
+    
+    # Clear progress indicators
+    progress_bar.empty()
+    status_text.empty()
     
     if building_data:
         
@@ -517,318 +547,318 @@ if selected_files:
             # Multiple buildings - comparison and overview tabs
             tab1, tab2, tab3, tab4 = st.tabs(["📈 Performance Charts", "🔄 Comparison", "📊 Analytics", "🏆 Rankings"])
         
-        # TAB 1: PERFORMANCE CHARTS (for multiple buildings)
-        with tab1:
-            st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
-            
-            # Side-by-side charts
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                # Heating Power Chart
-                fig_power = go.Figure()
-                colors = px.colors.qualitative.Set3 if color_theme == "Set3" else getattr(px.colors.sequential, color_theme)
+            # TAB 1: PERFORMANCE CHARTS (for multiple buildings)
+            with tab1:
+                st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
                 
-                for i, (building_name, data) in enumerate(building_data.items()):
-                    color = colors[i % len(colors)] if isinstance(colors, list) else colors[min(i * 2, len(colors) - 1)]
-                    fig_power.add_trace(go.Scatter(
-                        x=data['Time_Months'],
-                        y=data['Heating_Power'],
-                        mode='lines',
-                        name=building_name,
-                        line=dict(color=color, width=2)
-                    ))
-                
-                fig_power.update_layout(
-                    title='🔥 Heating Power Comparison',
-                    xaxis_title='Month',
-                    yaxis_title='Power (W)',
-                    height=chart_height,
-                    margin=dict(l=20, r=20, t=40, b=20),
-                    xaxis=dict(
-                        tickvals=list(range(1, 13)),
-                        ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-                    ),
-                    legend=dict(x=0, y=1, bgcolor="rgba(255,255,255,0.1)")
-                )
-                
-                st.plotly_chart(fig_power, use_container_width=True)
-            
-            with col2:
-                # Temperature Chart
-                fig_temp = go.Figure()
-                
-                for i, (building_name, data) in enumerate(building_data.items()):
-                    color = colors[i % len(colors)] if isinstance(colors, list) else colors[min(i * 2, len(colors) - 1)]
-                    fig_temp.add_trace(go.Scatter(
-                        x=data['Time_Months'],
-                        y=data['Indoor_Temperature'],
-                        mode='lines',
-                        name=building_name,
-                        line=dict(color=color, width=2)
-                    ))
-                
-                # Add comfort zone
-                fig_temp.add_hline(y=20, line_dash="dash", line_color="rgba(255,255,255,0.5)", annotation_text="20°C")
-                fig_temp.add_hline(y=24, line_dash="dash", line_color="rgba(255,255,255,0.5)", annotation_text="24°C")
-                
-                fig_temp.update_layout(
-                    title='🌡️ Temperature Comparison',
-                    xaxis_title='Month',
-                    yaxis_title='Temperature (°C)',
-                    height=chart_height,
-                    margin=dict(l=20, r=20, t=40, b=20),
-                    xaxis=dict(
-                        tickvals=list(range(1, 13)),
-                        ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-                    ),
-                    legend=dict(x=0, y=1, bgcolor="rgba(255,255,255,0.1)")
-                )
-                
-                st.plotly_chart(fig_temp, use_container_width=True)
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        # TAB 2: COMPARISON
-        with tab2:
-            st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
-            
-            if len(building_data) >= 2:
-                # Performance metrics comparison
-                metrics_data = []
-                for building_name, stats in building_stats.items():
-                    metrics_data.append({
-                        'Building': building_name,
-                        'Peak Power (W)': stats['max_power'],
-                        'Avg Power (W)': stats['avg_power'],
-                        'Annual kWh': stats['annual_consumption'],
-                        'Avg Temp (°C)': stats['avg_temp']
-                    })
-                
-                metrics_df = pd.DataFrame(metrics_data)
-                
-                # Side-by-side comparison charts
+                # Side-by-side charts
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    # Bar chart comparison
-                    fig_bar = px.bar(
-                        metrics_df,
-                        x='Building',
-                        y='Annual kWh',
-                        title='📊 Annual Consumption Comparison',
-                        color='Annual kWh',
-                        color_continuous_scale=color_theme,
-                        height=chart_height//1.2
-                    )
-                    fig_bar.update_layout(margin=dict(l=20, r=20, t=40, b=20))
-                    st.plotly_chart(fig_bar, use_container_width=True)
-                
-                with col2:
-                    # Radar chart for multi-metric comparison
-                    fig_radar = go.Figure()
+                    # Heating Power Chart
+                    fig_power = go.Figure()
+                    colors = px.colors.qualitative.Set3 if color_theme == "Set3" else getattr(px.colors.sequential, color_theme)
                     
-                    # Normalize metrics for radar chart
-                    normalized_df = metrics_df.copy()
-                    for col in ['Peak Power (W)', 'Avg Power (W)', 'Annual kWh', 'Avg Temp (°C)']:
-                        max_val = normalized_df[col].max()
-                        if max_val > 0:
-                            normalized_df[col] = normalized_df[col] / max_val * 100
-                    
-                    for i, building in enumerate(normalized_df['Building']):
-                        fig_radar.add_trace(go.Scatterpolar(
-                            r=[normalized_df.iloc[i]['Peak Power (W)'],
-                               normalized_df.iloc[i]['Avg Power (W)'],
-                               normalized_df.iloc[i]['Annual kWh'],
-                               normalized_df.iloc[i]['Avg Temp (°C)']],
-                            theta=['Peak Power', 'Avg Power', 'Annual kWh', 'Avg Temp'],
-                            fill='toself',
-                            name=building,
-                            line_color=colors[i % len(colors)] if isinstance(colors, list) else colors[min(i * 2, len(colors) - 1)]
+                    for i, (building_name, data) in enumerate(building_data.items()):
+                        color = colors[i % len(colors)] if isinstance(colors, list) else colors[min(i * 2, len(colors) - 1)]
+                        fig_power.add_trace(go.Scatter(
+                            x=data['Time_Months'],
+                            y=data['Heating_Power'],
+                            mode='lines',
+                            name=building_name,
+                            line=dict(color=color, width=2)
                         ))
                     
-                    fig_radar.update_layout(
-                        polar=dict(
-                            radialaxis=dict(
-                                visible=True,
-                                range=[0, 100]
-                            )),
-                        title='🎯 Multi-Metric Comparison',
-                        height=chart_height//1.2,
-                        margin=dict(l=20, r=20, t=40, b=20)
+                    fig_power.update_layout(
+                        title='🔥 Heating Power Comparison',
+                        xaxis_title='Month',
+                        yaxis_title='Power (W)',
+                        height=chart_height,
+                        margin=dict(l=20, r=20, t=40, b=20),
+                        xaxis=dict(
+                            tickvals=list(range(1, 13)),
+                            ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                        ),
+                        legend=dict(x=0, y=1, bgcolor="rgba(255,255,255,0.1)")
                     )
-                    st.plotly_chart(fig_radar, use_container_width=True)
-                
-                # Comparison table
-                st.markdown("### 📋 Detailed Comparison")
-                st.dataframe(metrics_df.set_index('Building'), use_container_width=True)
-                
-            else:
-                st.info("📝 Select multiple buildings for comparison analysis")
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        # TAB 3: ANALYTICS
-        with tab3:
-            st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                # Correlation analysis
-                if len(building_data) >= 1:
-                    # Combine all building data for correlation
-                    all_data = []
-                    for building_name, data in building_data.items():
-                        temp_data = data.copy()
-                        temp_data['Building'] = building_name
-                        all_data.append(temp_data)
                     
-                    combined_df = pd.concat(all_data, ignore_index=True)
+                    st.plotly_chart(fig_power, use_container_width=True)
+                
+                with col2:
+                    # Temperature Chart
+                    fig_temp = go.Figure()
                     
-                    fig_corr = px.scatter(
-                        combined_df,
-                        x='Indoor_Temperature',
-                        y='Heating_Power',
-                        color='Building',
-                        title='🔄 Temperature vs Power Correlation',
-                        labels={'Indoor_Temperature': 'Temperature (°C)', 'Heating_Power': 'Power (W)'},
-                        color_discrete_sequence=px.colors.qualitative.Set3,
-                        height=chart_height//1.2
+                    for i, (building_name, data) in enumerate(building_data.items()):
+                        color = colors[i % len(colors)] if isinstance(colors, list) else colors[min(i * 2, len(colors) - 1)]
+                        fig_temp.add_trace(go.Scatter(
+                            x=data['Time_Months'],
+                            y=data['Indoor_Temperature'],
+                            mode='lines',
+                            name=building_name,
+                            line=dict(color=color, width=2)
+                        ))
+                    
+                    # Add comfort zone
+                    fig_temp.add_hline(y=20, line_dash="dash", line_color="rgba(255,255,255,0.5)", annotation_text="20°C")
+                    fig_temp.add_hline(y=24, line_dash="dash", line_color="rgba(255,255,255,0.5)", annotation_text="24°C")
+                    
+                    fig_temp.update_layout(
+                        title='🌡️ Temperature Comparison',
+                        xaxis_title='Month',
+                        yaxis_title='Temperature (°C)',
+                        height=chart_height,
+                        margin=dict(l=20, r=20, t=40, b=20),
+                        xaxis=dict(
+                            tickvals=list(range(1, 13)),
+                            ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                        ),
+                        legend=dict(x=0, y=1, bgcolor="rgba(255,255,255,0.1)")
                     )
-                    fig_corr.update_layout(margin=dict(l=20, r=20, t=40, b=20))
-                    st.plotly_chart(fig_corr, use_container_width=True)
+                    
+                    st.plotly_chart(fig_temp, use_container_width=True)
+                
+                st.markdown('</div>', unsafe_allow_html=True)
             
-            with col2:
-                # Distribution analysis
-                consumption_values = [stats['annual_consumption'] for stats in building_stats.values()]
-                building_names = list(building_stats.keys())
+            # TAB 2: COMPARISON
+            with tab2:
+                st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
                 
-                fig_dist = px.box(
-                    y=consumption_values,
-                    title='📈 Consumption Distribution',
-                    labels={'y': 'Annual Consumption (kWh)'},
-                    height=chart_height//1.2
-                )
-                fig_dist.update_layout(margin=dict(l=20, r=20, t=40, b=20))
-                st.plotly_chart(fig_dist, use_container_width=True)
+                if len(building_data) >= 2:
+                    # Performance metrics comparison
+                    metrics_data = []
+                    for building_name, stats in building_stats.items():
+                        metrics_data.append({
+                            'Building': building_name,
+                            'Peak Power (W)': stats['max_power'],
+                            'Avg Power (W)': stats['avg_power'],
+                            'Annual kWh': stats['annual_consumption'],
+                            'Avg Temp (°C)': stats['avg_temp']
+                        })
+                    
+                    metrics_df = pd.DataFrame(metrics_data)
+                    
+                    # Side-by-side comparison charts
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        # Bar chart comparison
+                        fig_bar = px.bar(
+                            metrics_df,
+                            x='Building',
+                            y='Annual kWh',
+                            title='📊 Annual Consumption Comparison',
+                            color='Annual kWh',
+                            color_continuous_scale=color_theme,
+                            height=chart_height//1.2
+                        )
+                        fig_bar.update_layout(margin=dict(l=20, r=20, t=40, b=20))
+                        st.plotly_chart(fig_bar, use_container_width=True)
+                    
+                    with col2:
+                        # Radar chart for multi-metric comparison
+                        fig_radar = go.Figure()
+                        
+                        # Normalize metrics for radar chart
+                        normalized_df = metrics_df.copy()
+                        for col in ['Peak Power (W)', 'Avg Power (W)', 'Annual kWh', 'Avg Temp (°C)']:
+                            max_val = normalized_df[col].max()
+                            if max_val > 0:
+                                normalized_df[col] = normalized_df[col] / max_val * 100
+                        
+                        for i, building in enumerate(normalized_df['Building']):
+                            fig_radar.add_trace(go.Scatterpolar(
+                                r=[normalized_df.iloc[i]['Peak Power (W)'],
+                                   normalized_df.iloc[i]['Avg Power (W)'],
+                                   normalized_df.iloc[i]['Annual kWh'],
+                                   normalized_df.iloc[i]['Avg Temp (°C)']],
+                                theta=['Peak Power', 'Avg Power', 'Annual kWh', 'Avg Temp'],
+                                fill='toself',
+                                name=building,
+                                line_color=colors[i % len(colors)] if isinstance(colors, list) else colors[min(i * 2, len(colors) - 1)]
+                            ))
+                        
+                        fig_radar.update_layout(
+                            polar=dict(
+                                radialaxis=dict(
+                                    visible=True,
+                                    range=[0, 100]
+                                )),
+                            title='🎯 Multi-Metric Comparison',
+                            height=chart_height//1.2,
+                            margin=dict(l=20, r=20, t=40, b=20)
+                        )
+                        st.plotly_chart(fig_radar, use_container_width=True)
+                    
+                    # Comparison table
+                    st.markdown("### 📋 Detailed Comparison")
+                    st.dataframe(metrics_df.set_index('Building'), use_container_width=True)
+                    
+                else:
+                    st.info("📝 Select multiple buildings for comparison analysis")
+                
+                st.markdown('</div>', unsafe_allow_html=True)
             
-            # Heatmap
-            if len(building_data) >= 2:
-                st.markdown("### 🔥 Performance Heatmap")
+            # TAB 3: ANALYTICS
+            with tab3:
+                st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
                 
-                heatmap_data = []
-                for building_name, stats in building_stats.items():
-                    heatmap_data.append([
-                        stats['max_power'],
-                        stats['avg_power'],
-                        stats['annual_consumption'],
-                        stats['avg_temp']
-                    ])
-                
-                heatmap_df = pd.DataFrame(
-                    heatmap_data,
-                    columns=['Peak Power', 'Avg Power', 'Annual kWh', 'Avg Temp'],
-                    index=list(building_stats.keys())
-                )
-                
-                # Normalize for better visualization
-                heatmap_normalized = heatmap_df.div(heatmap_df.max())
-                
-                fig_heatmap = px.imshow(
-                    heatmap_normalized.T,
-                    color_continuous_scale=color_theme,
-                    title='🏢 Normalized Performance Heatmap',
-                    labels=dict(x="Building", y="Metric", color="Normalized Value"),
-                    height=300
-                )
-                fig_heatmap.update_layout(margin=dict(l=20, r=20, t=40, b=20))
-                st.plotly_chart(fig_heatmap, use_container_width=True)
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        # TAB 4: RANKINGS
-        with tab4:
-            st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
-            
-            if len(building_data) >= 2:
-                # Performance rankings
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    # Most efficient
-                    best_efficiency = min(building_stats.items(), key=lambda x: x[1]['annual_consumption'])
-                    st.markdown(f'''
-                    <div class="info-box-compact">
-                        <h4>🥇 Most Efficient Building</h4>
-                        <p><strong>{best_efficiency[0]}</strong></p>
-                        <p>Annual: <strong>{best_efficiency[1]['annual_consumption']:.0f} kWh</strong></p>
-                    </div>
-                    ''', unsafe_allow_html=True)
-                    
-                    # Highest peak demand
-                    highest_peak = max(building_stats.items(), key=lambda x: x[1]['max_power'])
-                    st.markdown(f'''
-                    <div class="info-box-compact">
-                        <h4>⚡ Highest Peak Demand</h4>
-                        <p><strong>{highest_peak[0]}</strong></p>
-                        <p>Peak: <strong>{highest_peak[1]['max_power']:.0f} W</strong></p>
-                    </div>
-                    ''', unsafe_allow_html=True)
+                    # Correlation analysis
+                    if len(building_data) >= 1:
+                        # Combine all building data for correlation
+                        all_data = []
+                        for building_name, data in building_data.items():
+                            temp_data = data.copy()
+                            temp_data['Building'] = building_name
+                            all_data.append(temp_data)
+                        
+                        combined_df = pd.concat(all_data, ignore_index=True)
+                        
+                        fig_corr = px.scatter(
+                            combined_df,
+                            x='Indoor_Temperature',
+                            y='Heating_Power',
+                            color='Building',
+                            title='🔄 Temperature vs Power Correlation',
+                            labels={'Indoor_Temperature': 'Temperature (°C)', 'Heating_Power': 'Power (W)'},
+                            color_discrete_sequence=px.colors.qualitative.Set3,
+                            height=chart_height//1.2
+                        )
+                        fig_corr.update_layout(margin=dict(l=20, r=20, t=40, b=20))
+                        st.plotly_chart(fig_corr, use_container_width=True)
                 
                 with col2:
-                    # Least efficient
-                    worst_efficiency = max(building_stats.items(), key=lambda x: x[1]['annual_consumption'])
-                    st.markdown(f'''
-                    <div class="info-box-compact">
-                        <h4>⚠️ Needs Improvement</h4>
-                        <p><strong>{worst_efficiency[0]}</strong></p>
-                        <p>Annual: <strong>{worst_efficiency[1]['annual_consumption']:.0f} kWh</strong></p>
-                    </div>
-                    ''', unsafe_allow_html=True)
+                    # Distribution analysis
+                    consumption_values = [stats['annual_consumption'] for stats in building_stats.values()]
+                    building_names = list(building_stats.keys())
                     
-                    # Best temperature control
-                    best_temp = min(building_stats.items(), key=lambda x: x[1]['temp_range'])
+                    fig_dist = px.box(
+                        y=consumption_values,
+                        title='📈 Consumption Distribution',
+                        labels={'y': 'Annual Consumption (kWh)'},
+                        height=chart_height//1.2
+                    )
+                    fig_dist.update_layout(margin=dict(l=20, r=20, t=40, b=20))
+                    st.plotly_chart(fig_dist, use_container_width=True)
+                
+                # Heatmap
+                if len(building_data) >= 2:
+                    st.markdown("### 🔥 Performance Heatmap")
+                    
+                    heatmap_data = []
+                    for building_name, stats in building_stats.items():
+                        heatmap_data.append([
+                            stats['max_power'],
+                            stats['avg_power'],
+                            stats['annual_consumption'],
+                            stats['avg_temp']
+                        ])
+                    
+                    heatmap_df = pd.DataFrame(
+                        heatmap_data,
+                        columns=['Peak Power', 'Avg Power', 'Annual kWh', 'Avg Temp'],
+                        index=list(building_stats.keys())
+                    )
+                    
+                    # Normalize for better visualization
+                    heatmap_normalized = heatmap_df.div(heatmap_df.max())
+                    
+                    fig_heatmap = px.imshow(
+                        heatmap_normalized.T,
+                        color_continuous_scale=color_theme,
+                        title='🏢 Normalized Performance Heatmap',
+                        labels=dict(x="Building", y="Metric", color="Normalized Value"),
+                        height=300
+                    )
+                    fig_heatmap.update_layout(margin=dict(l=20, r=20, t=40, b=20))
+                    st.plotly_chart(fig_heatmap, use_container_width=True)
+                
+                st.markdown('</div>', unsafe_allow_html=True)
+            
+            # TAB 4: RANKINGS
+            with tab4:
+                st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
+                
+                if len(building_data) >= 2:
+                    # Performance rankings
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        # Most efficient
+                        best_efficiency = min(building_stats.items(), key=lambda x: x[1]['annual_consumption'])
+                        st.markdown(f'''
+                        <div class="info-box-compact">
+                            <h4>🥇 Most Efficient Building</h4>
+                            <p><strong>{best_efficiency[0]}</strong></p>
+                            <p>Annual: <strong>{best_efficiency[1]['annual_consumption']:.0f} kWh</strong></p>
+                        </div>
+                        ''', unsafe_allow_html=True)
+                        
+                        # Highest peak demand
+                        highest_peak = max(building_stats.items(), key=lambda x: x[1]['max_power'])
+                        st.markdown(f'''
+                        <div class="info-box-compact">
+                            <h4>⚡ Highest Peak Demand</h4>
+                            <p><strong>{highest_peak[0]}</strong></p>
+                            <p>Peak: <strong>{highest_peak[1]['max_power']:.0f} W</strong></p>
+                        </div>
+                        ''', unsafe_allow_html=True)
+                    
+                    with col2:
+                        # Least efficient
+                        worst_efficiency = max(building_stats.items(), key=lambda x: x[1]['annual_consumption'])
+                        st.markdown(f'''
+                        <div class="info-box-compact">
+                            <h4>⚠️ Needs Improvement</h4>
+                            <p><strong>{worst_efficiency[0]}</strong></p>
+                            <p>Annual: <strong>{worst_efficiency[1]['annual_consumption']:.0f} kWh</strong></p>
+                        </div>
+                        ''', unsafe_allow_html=True)
+                        
+                        # Best temperature control
+                        best_temp = min(building_stats.items(), key=lambda x: x[1]['temp_range'])
+                        st.markdown(f'''
+                        <div class="info-box-compact">
+                            <h4>🌡️ Best Temperature Control</h4>
+                            <p><strong>{best_temp[0]}</strong></p>
+                            <p>Range: <strong>{best_temp[1]['temp_range']:.1f}°C</strong></p>
+                        </div>
+                        ''', unsafe_allow_html=True)
+                    
+                    # Ranking table
+                    st.markdown("### 🏆 Complete Rankings")
+                    
+                    ranking_df = pd.DataFrame({
+                        'Building': list(building_stats.keys()),
+                        'Efficiency Rank': range(1, len(building_stats) + 1),
+                        'Annual kWh': [stats['annual_consumption'] for stats in building_stats.values()],
+                        'Peak Power (W)': [stats['max_power'] for stats in building_stats.values()],
+                        'Avg Temp (°C)': [stats['avg_temp'] for stats in building_stats.values()]
+                    }).sort_values('Annual kWh')
+                    
+                    ranking_df['Efficiency Rank'] = range(1, len(ranking_df) + 1)
+                    
+                    st.dataframe(ranking_df.set_index('Efficiency Rank'), use_container_width=True)
+                    
+                    # Quick insights
+                    st.markdown("### 💡 Quick Insights")
+                    potential_savings = worst_efficiency[1]['annual_consumption'] - best_efficiency[1]['annual_consumption']
                     st.markdown(f'''
                     <div class="info-box-compact">
-                        <h4>🌡️ Best Temperature Control</h4>
-                        <p><strong>{best_temp[0]}</strong></p>
-                        <p>Range: <strong>{best_temp[1]['temp_range']:.1f}°C</strong></p>
+                        <h4>💰 Potential Savings</h4>
+                        <p>If <strong>{worst_efficiency[0]}</strong> performed like <strong>{best_efficiency[0]}</strong>:</p>
+                        <p><strong>{potential_savings:.0f} kWh/year</strong> could be saved</p>
                     </div>
                     ''', unsafe_allow_html=True)
                 
-                # Ranking table
-                st.markdown("### 🏆 Complete Rankings")
+                else:
+                    st.info("📝 Select multiple buildings to see rankings")
                 
-                ranking_df = pd.DataFrame({
-                    'Building': list(building_stats.keys()),
-                    'Efficiency Rank': range(1, len(building_stats) + 1),
-                    'Annual kWh': [stats['annual_consumption'] for stats in building_stats.values()],
-                    'Peak Power (W)': [stats['max_power'] for stats in building_stats.values()],
-                    'Avg Temp (°C)': [stats['avg_temp'] for stats in building_stats.values()]
-                }).sort_values('Annual kWh')
-                
-                ranking_df['Efficiency Rank'] = range(1, len(ranking_df) + 1)
-                
-                st.dataframe(ranking_df.set_index('Efficiency Rank'), use_container_width=True)
-                
-                # Quick insights
-                st.markdown("### 💡 Quick Insights")
-                potential_savings = worst_efficiency[1]['annual_consumption'] - best_efficiency[1]['annual_consumption']
-                st.markdown(f'''
-                <div class="info-box-compact">
-                    <h4>💰 Potential Savings</h4>
-                    <p>If <strong>{worst_efficiency[0]}</strong> performed like <strong>{best_efficiency[0]}</strong>:</p>
-                    <p><strong>{potential_savings:.0f} kWh/year</strong> could be saved</p>
-                </div>
-                ''', unsafe_allow_html=True)
-            
-            else:
-                st.info("📝 Select multiple buildings to see rankings")
-            
-            st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
     
     else:
         st.error("❌ No valid building data could be loaded.")
