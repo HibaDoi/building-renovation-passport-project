@@ -252,9 +252,18 @@ def main():
     with tab2:
         st.subheader("📊 Heat Consumption Analysis")
         
-        target_building_id = "NL.IMBAG.Pand.0503100000019674"
-        file_path = next((s for s in mat_files
-                   if s.endswith(f"{'0503100000019674_result'}.mat")), None)
+        
+                            # Find the specific file
+        building_id = "NL_Building_0503100000019674"
+        target_filename = f"{building_id}_result.mat"
+
+        # Filter to find your specific file
+        matching_blobs = [blob for blob in mat_blobs if blob.name.endswith(target_filename)]
+
+        if matching_blobs:
+            file_blob = matching_blobs[0]  # Get the first (should be only) match
+            st.success(f"✅ Found file: {file_blob.name}")
+        file_path = file_blob.name
         
         if True:
             try:
@@ -302,8 +311,17 @@ def main():
                     st.metric("Average Power", f"{avg_power:,.0f} W")
                 
                 with col2:
-                    post_file_path = next((s for s in mat_files
-                   if s.endswith(f"{'0503100000013392_result'}.mat")), None)
+                    # Find the specific file
+                    building_id = "NL_Building_0503100000013392"
+                    target_filename = f"{building_id}_result.mat"
+
+                    # Filter to find your specific file
+                    matching_blobs = [blob for blob in mat_blobs if blob.name.endswith(target_filename)]
+
+                    if matching_blobs:
+                        file_blob = matching_blobs[0]  # Get the first (should be only) match
+                        st.success(f"✅ Found file: {file_blob.name}")
+                    post_file_path = file_blob.name
                     if os.path.exists(post_file_path):
                         st.markdown("#### 🌱 Post-Renovation Heating")
                         
