@@ -184,7 +184,7 @@ def main():
             
             # Filter only buildings that have corresponding .mat results
             filtered_gdf = gdf[gdf["object_id_clean"].isin(building_ids)]
-            st.write(filtered_gdf)
+            st.write(filtered_gdf.drop(columns=['geometry'], errors='ignore'))
 #             # Load building information
 #             building_data = load_building_info(building_info_path)
             
