@@ -142,10 +142,12 @@ def load_shapefile_from_gcs(blob_prefix,bucket):
 def load_json_from_gcs(blob_name,bucket):
     st.write("i am here")
     blob = bucket.blob(blob_name)
-    
-    st.write(blob)
-    # data = json.loads(json_string)
-    # return data
+    blob_name = f"{blob_name}{".json"}"
+    st.write(blob_name)
+    json_string = blob_name.download_as_text()
+
+    data = json.loads(json_string)
+    return data
 # Main App
 def main():
     st.title("🗺️ Building Analysis Dashboard")
