@@ -159,10 +159,10 @@ def main():
         # Load shapefile from GCS
         gdf = load_shapefile_from_gcs( "shpp/u",bucket)
         
-        if gdf is not None:
-            # Path to building information JSON file
-            building_data = load_json_from_gcs("for_teaser",bucket)
-            st.write(building_data)
+        # if gdf is not None:
+        #     # Path to building information JSON file
+        #     building_data = load_json_from_gcs("for_teaser",bucket)
+        #     st.write(building_data)
             
             # # Path to folder containing .mat files
             # results_folder = "Open_modula_maybe/simulation_results"
