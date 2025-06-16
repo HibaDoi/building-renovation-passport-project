@@ -80,8 +80,14 @@ def get_building_ids_from_gcs(_client, _bucket, mat_prefix="simulation/"):
             # Extract building ID from filename
             filename = f.split('/')[-1]  # Get just the filename
             if filename.startswith("NL_Building_"):
-                building_id = filename.replace("_result.mat", "").replace("NL_Building_", "")
-                building_ids.append(building_id)
+                # Convert from NL_Building_0503100000019674_result.mat to NL.IMBAG.Pand.0503100000019674
+                building_id_number = filename.replace("_result.mat", "").replace("NL_Building_", "")
+                full_building_id = f"NL.IMBAG.Pand.{building_id_number}"
+                building_ids.append(full_building_id)
+        
+        st.info(f"🔍 Found {len(building_ids)} simulation files in GCS")
+        if len(building_ids) > 0:
+            st.write(f"Sample IDs: {building_ids[:3]}...")
         
         return building_ids, mat_files
     except Exception as e:
@@ -106,6 +112,11 @@ def main():
         # Get building IDs that have simulation results
         with st.spinner("Checking simulation availability..."):
             simulation_building_ids, mat_files = get_building_ids_from_gcs(client, bucket)
+        
+        # Debug: Show some sample IDs for comparison
+        st.write("🔍 **Debug Info:**")
+        st.write(f"Sample shapefile IDs: {gdf['object_id_clean'].head(3).tolist()}")
+        st.write(f"Sample simulation IDs: {simulation_building_ids[:3] if simulation_building_ids else 'None found'}")
         
         # Add simulation availability to the dataframe
         gdf['has_simulation'] = gdf['object_id_clean'].isin(simulation_building_ids)
@@ -233,13 +244,25 @@ def main():
                     key="all_buildings_map",
                     width=800, 
                     height=600,
-                    returned_objects=["last_object_clicked"]
+                    returned_objects=["last_object_clicked_popup"]
                 )
                 
-                # Process click events
+                # Process click events - Fixed click detection
                 clicked_building_id = None
                 
-                if map_data.get('last_object_clicked'):
+                if map_data.get('last_object_clicked_popup'):
+                    popup_data = map_data['last_object_clicked_popup']
+                    if popup_data:
+                        # Extract building ID from popup content
+                        popup_content = str(popup_data)
+                        # Look for building ID in the popup content
+                        import re
+                        match = re.search(r'Building ID:</b> (NL\.IMBAG\.Pand\.\d+)', popup_content)
+                        if match:
+                            clicked_building_id = match.group(1)
+                
+                # Fallback: use coordinate-based detection if popup method fails
+                if not clicked_building_id and map_data.get('last_object_clicked'):
                     click_data = map_data['last_object_clicked']
                     
                     if click_data and 'lat' in click_data and 'lng' in click_data:
@@ -250,22 +273,26 @@ def main():
                         from shapely.geometry import Point
                         click_point = Point(click_lng, click_lat)
                         
-                        min_distance = float('inf')
-                        closest_building = None
-                        
+                        # Check if click is inside any building
                         for idx, row in gdf.iterrows():
                             if row.geometry.contains(click_point):
-                                closest_building = row['object_id_clean']
+                                clicked_building_id = row['object_id_clean']
                                 break
-                            else:
+                        
+                        # If not inside any building, find the closest one
+                        if not clicked_building_id:
+                            min_distance = float('inf')
+                            closest_building = None
+                            
+                            for idx, row in gdf.iterrows():
                                 centroid = row.geometry.centroid
                                 distance = click_point.distance(centroid)
                                 if distance < min_distance:
                                     min_distance = distance
                                     closest_building = row['object_id_clean']
-                        
-                        if closest_building:
-                            clicked_building_id = closest_building
+                            
+                            if closest_building and min_distance < 0.001:  # Only if very close
+                                clicked_building_id = closest_building
                 
                 # Update session state
                 if clicked_building_id:
