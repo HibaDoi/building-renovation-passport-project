@@ -19,33 +19,33 @@ st.set_page_config(
 st.write("Fiona version:", fiona.__version__)
 st.write("GeoPandas version:", gpd.__version__)
 
-# def load_shapefile_from_gcs():
-#     """Load shapefile directly from Google Cloud Storage using Streamlit secrets"""
+def load_shapefile_from_gcs():
+    """Load shapefile directly from Google Cloud Storage using Streamlit secrets"""
     
-#     try:
-#         # Create credentials from Streamlit secrets
-#         credentials = service_account.Credentials.from_service_account_info(
-#             st.secrets["gcp_service_account"]
-#         )
+    try:
+        # Create credentials from Streamlit secrets
+        credentials = service_account.Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"]
+        )
         
-#         # Initialize GCS client
-#         client = storage.Client(credentials=credentials)
+        # Initialize GCS client
+        client = storage.Client(credentials=credentials)
         
-#         # Read shapefile directly from GCS using the gs:// protocol
-#         gcs_path = "gs://renodat/shpp/u.shp"
+        # Read shapefile directly from GCS using the gs:// protocol
+        gcs_path = "gs://renodat/shpp/u.shp"
         
-#         st.write("📥 Reading shapefile directly from Google Cloud Storage...")
+        st.write("📥 Reading shapefile directly from Google Cloud Storage...")
         
-#         # Read the shapefile directly from GCS
-#         gdf = gpd.read_file(gcs_path, storage_options={'token': credentials})
+        # Read the shapefile directly from GCS
+        gdf = gpd.read_file(gcs_path, storage_options={'token': credentials})
         
-#         st.success(f"✅ Successfully loaded shapefile with {len(gdf)} features")
-#         return gdf
+        st.success(f"✅ Successfully loaded shapefile with {len(gdf)} features")
+        return gdf
             
-#     except Exception as e:
-#         st.error(f"❌ Error loading shapefile: {e}")
-#         st.error("Make sure all shapefile components (.shp, .shx, .dbf, .prj) exist in the GCS bucket")
-#         return None
+    except Exception as e:
+        st.error(f"❌ Error loading shapefile: {e}")
+        st.error("Make sure all shapefile components (.shp, .shx, .dbf, .prj) exist in the GCS bucket")
+        return None
 
 # def load_building_info(json_file_path):
 #     """Load building information from JSON file"""
@@ -133,17 +133,17 @@ st.write("GeoPandas version:", gpd.__version__)
 #     else:
 #         return [], []
 
-# # Main App
-# def main():
-#     st.title("🗺️ Building Analysis Dashboard")
-#     st.markdown("---")
+# Main App
+def main():
+    st.title("🗺️ Building Analysis Dashboard")
+    st.markdown("---")
     
-#     # Create tabs for different views
-#     tab1, tab2 = st.tabs(["🗺️ Building Map", "📊 Energy Analysis"])
+    # Create tabs for different views
+    tab1, tab2 = st.tabs(["🗺️ Building Map", "📊 Energy Analysis"])
     
-#     with tab1:
-#         # Load shapefile from GCS
-#         gdf = load_shapefile_from_gcs()
+    with tab1:
+        # Load shapefile from GCS
+        gdf = load_shapefile_from_gcs()
         
 #         if gdf is not None:
 #             # Path to building information JSON file
