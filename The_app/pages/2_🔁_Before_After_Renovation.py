@@ -1,6 +1,7 @@
 import streamlit as st
 import geopandas as gpd
 import pydeck as pdk
+import tempfile
 import os 
 import json
 import matplotlib.pyplot as plt
@@ -21,40 +22,36 @@ st.set_page_config(
 credentials = service_account.Credentials.from_service_account_info(
             st.secrets["gcp_service_account"]
         )
-# Initialize GCS client
-client = storage.Client(credentials=credentials)
-bucket = client.bucket("renodat")
-# # Access a specific file directly
-# file_path = "shpp/u.shp"  # Replace with your actual file path
-# blob = bucket.blob(file_path)
-# st.write("blooooooooooob:", blob)
 
-# Access the correct file path
-blob = bucket.blob("shpp/u.shp")
+bucket_name="renodat"
 
-# Now it should exist
-gcs_path = "gs://renodat/shpp/u.shp"
 
-def load_shapefile_from_gcs():
-    """Load shapefile directly from Google Cloud Storage using Streamlit secrets"""
+def load_shapefile_from_gcs(bucket_name, blob_prefix):
+    """
+    Load shapefile from GCS bucket
+    blob_prefix should be the path without .shp extension
+    """
+    client = storage.Client(credentials=credentials)
+    bucket = client.bucket(bucket_name)
     
-    try:
-        # Read shapefile directly from GCS using the gs:// protocol
-        
-        
-        st.write("📥 Reading shapefile directly from Google Cloud Storage...")
-        
-        # # Read the shapefile directly from GCS
-        # gdf = gpd.read_file(gcs_path, storage_options={'token': credentials})
-        
-        # st.success(f"✅ Successfully loaded shapefile with {len(gdf)} features")
-        return gdf
+    # Shapefile components
+    extensions = ['.shp', '.shx', '.dbf', '.prj', '.cpg']
+    
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Download all shapefile components
+        for ext in extensions:
+            blob_name = f"{blob_prefix}{ext}"
+            blob = bucket.blob(blob_name)
             
-    except Exception as e:
-        st.error(f"❌ Error loading shapefile: {e}")
-        st.error("Make sure all shapefile components (.shp, .shx, .dbf, .prj) exist in the GCS bucket")
-        return None
-
+            if blob.exists():
+                local_path = os.path.join(temp_dir, f"temp{ext}")
+                blob.download_to_filename(local_path)
+        
+        # Load the shapefile
+        shp_path = os.path.join(temp_dir, "temp.shp")
+        gdf = gpd.read_file(shp_path)
+    
+    return gdf
 # def load_building_info(json_file_path):
 #     """Load building information from JSON file"""
 #     try:
@@ -151,7 +148,7 @@ def main():
     
     with tab1:
         # Load shapefile from GCS
-        gdf = load_shapefile_from_gcs()
+        gdf = load_shapefile_from_gcs(bucket_name, "shpp/u")
         
 #         if gdf is not None:
 #             # Path to building information JSON file
