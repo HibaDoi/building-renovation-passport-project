@@ -165,7 +165,7 @@ def main():
     with tab1:
         # Load shapefile from GCS
         gdf = load_shapefile_from_gcs( "shpp/u",bucket)
-        
+        st.write("eee",gdf.head())
         
         if gdf is not None:
             # Path to building information JSON file
