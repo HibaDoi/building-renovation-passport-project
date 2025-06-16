@@ -141,10 +141,10 @@ def load_shapefile_from_gcs(blob_prefix,bucket):
 
 def load_json_from_gcs(blob_name,bucket):
     st.write("i am here")
-    blob = bucket.blob(blob_name)
-    blob_name = f"{blob_name}{'.json'}"
     
-    json_string = blob_name.download_as_text()
+    blob_name = f"{blob_name}{'.json'}"
+    blob = bucket.blob(blob_name)
+    json_string = blob.download_as_text()
 
     data = json.loads(json_string)
     return data
