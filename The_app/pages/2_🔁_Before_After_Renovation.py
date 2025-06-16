@@ -143,10 +143,9 @@ def load_json_from_gcs(blob_name,bucket):
     st.write("i am here")
     blob = bucket.blob(blob_name)
     
-    # Download as text and parse
-    json_string = blob.download_as_text()
-    data = json.loads(json_string)
-    return data
+    st.write(blob)
+    # data = json.loads(json_string)
+    # return data
 # Main App
 def main():
     st.title("🗺️ Building Analysis Dashboard")
@@ -160,9 +159,9 @@ def main():
         gdf = load_shapefile_from_gcs( "shpp/u",bucket)
         st.write(gdf)
         
-        # if gdf is not None:
-        #     # Path to building information JSON file
-        #     building_data = load_json_from_gcs("for_teaser",bucket)
+        if gdf is not None:
+            # Path to building information JSON file
+            building_data = load_json_from_gcs("for_teaser",bucket)
         #     st.write(building_data)
             
             # # Path to folder containing .mat files
