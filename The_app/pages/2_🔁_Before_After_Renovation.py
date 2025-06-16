@@ -142,7 +142,7 @@ def load_shapefile_from_gcs(blob_prefix,bucket):
 def load_json_from_gcs(blob_name,bucket):
     st.write("i am here")
     blob = bucket.blob(blob_name)
-    blob_name = f"{blob_name}{".json"}"
+    blob_name = f"{blob_name}{'.json'}"
     
     json_string = blob_name.download_as_text()
 
@@ -164,7 +164,7 @@ def main():
         if gdf is not None:
             # Path to building information JSON file
             building_data = load_json_from_gcs("for_teaser",bucket)
-            # st.write(building_data)
+            st.write(building_data)
             
             # # Path to folder containing .mat files
             # results_folder = "Open_modula_maybe/simulation_results"
