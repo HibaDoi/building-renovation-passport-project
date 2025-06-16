@@ -5,7 +5,7 @@
 ## Overview
 
 This project creates a **Building Renovation Passport** - A comprehensive digital tool that processes CityJSON building data from Delft City to generate detailed building performance simulations and renovation recommendations. The system combines advanced data extraction, thermal simulation modeling, and interactive visualization to support evidence-based building renovation decision-making.
-![Dashboard Screenshot](images/image.png)
+![Dashboard Screenshot](image/image.png)
 ## What is a Building Renovation Passport?
 
 A Building Renovation Passport is an evolution of traditional Energy Performance Certificates (EPCs) that provides:
