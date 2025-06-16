@@ -31,9 +31,9 @@ bucket = client.bucket("renodat")
 # st.write("blooooooooooob:", blob)
 
 # List all files in the bucket
-print("All files in bucket:")
+st.write("All files in bucket:")
 for blob in bucket.list_blobs():
-    print(f"- {blob.name}")
+    st.write(f"- {blob.name}")
 
 def load_shapefile_from_gcs():
     """Load shapefile directly from Google Cloud Storage using Streamlit secrets"""
