@@ -50,6 +50,7 @@ def load_shapefile_from_gcs(bucket_name, blob_prefix):
         # Load the shapefile
         shp_path = os.path.join(temp_dir, "temp.shp")
         gdf = gpd.read_file(shp_path)
+        st.write("okkkk")
     
     return gdf
 # def load_building_info(json_file_path):
