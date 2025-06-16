@@ -132,7 +132,7 @@ def load_shapefile_from_gcs(blob_prefix,bucket):
 # @st.cache_data
 def get_building_ids(mat_blobs):
     """Get building IDs from .mat files"""
-    st.write("ok here")
+    
     mat_files = [blob.name for blob in mat_blobs if blob.name.endswith(".mat")]
     building_ids = [f.replace("_result.mat", "").replace("NL_Building_", "NL.IMBAG.Pand.") for f in mat_files]
     return building_ids, mat_files
@@ -158,12 +158,12 @@ def main():
     with tab1:
         # Load shapefile from GCS
         gdf = load_shapefile_from_gcs( "shpp/u",bucket)
-        st.write(gdf)
+        
         
         if gdf is not None:
             # Path to building information JSON file
             building_data = load_json_from_gcs("for_teaser",bucket)
-            st.write(building_data)
+            
             
             # Path to folder containing .mat files
             mat_blobs = client.list_blobs(
@@ -173,11 +173,11 @@ def main():
             
             # Get all building IDs from the .mat filenames
             building_ids, mat_files = get_building_ids(mat_blobs)
-            st.write("aal_good")
             
-#             # Filter only buildings that have corresponding .mat results
-#             filtered_gdf = gdf[gdf["object_id_clean"].isin(building_ids)]
             
+            # Filter only buildings that have corresponding .mat results
+            filtered_gdf = gdf[gdf["object_id_clean"].isin(building_ids)]
+            st.write(filtered_gdf)
 #             # Load building information
 #             building_data = load_building_info(building_info_path)
             
