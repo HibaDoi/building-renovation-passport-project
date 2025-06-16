@@ -1229,13 +1229,13 @@ if selected_files:
                     gridcolor='#E9ECEF' if show_grid else 'rgba(0,0,0,0)',
                     zerolinecolor='#DEE2E6',
                     tickfont=dict(color='#2C3E50'),
-                    titlefont=dict(color='#2C3E50')
+                    title=dict(font=dict(color='#2C3E50'))
                 )
                 fig_heatmap.update_yaxes(
                     gridcolor='#E9ECEF' if show_grid else 'rgba(0,0,0,0)',
                     zerolinecolor='#DEE2E6',
                     tickfont=dict(color='#2C3E50'),
-                    titlefont=dict(color='#2C3E50')
+                    title=dict(font=dict(color='#2C3E50'))
                 )
                 
                 st.plotly_chart(fig_heatmap, use_container_width=True)
