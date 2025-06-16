@@ -262,7 +262,7 @@ with st.sidebar:
 # Main dashboard content
 if selected_files:
     
-    # Load data for all selected buildings
+    # Loaddata for all selected buildings
     building_data = {}
     building_stats = {}
     
