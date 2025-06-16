@@ -24,15 +24,15 @@ credentials = service_account.Credentials.from_service_account_info(
         )
 
 bucket_name="renodat"
+client = storage.Client(credentials=credentials)
+bucket = client.bucket(bucket_name)
 
-
-def load_shapefile_from_gcs(bucket_name, blob_prefix):
+def load_shapefile_from_gcs(blob_prefix,bucket):
     """
     Load shapefile from GCS bucket
     blob_prefix should be the path without .shp extension
     """
-    client = storage.Client(credentials=credentials)
-    bucket = client.bucket(bucket_name)
+
     
     # Shapefile components
     extensions = ['.shp', '.shx', '.dbf', '.prj', '.cpg']
@@ -139,10 +139,8 @@ def load_shapefile_from_gcs(bucket_name, blob_prefix):
 #     else:
 #         return [], []
 
-def load_json_from_gcs(bucket_name, blob_name):
+def load_json_from_gcs(blob_name,bucket):
     st.write("i am here")
-    client = storage.Client(credentials=credentials)
-    bucket = client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
     
     # Download as text and parse
@@ -159,11 +157,11 @@ def main():
     
     with tab1:
         # Load shapefile from GCS
-        gdf = load_shapefile_from_gcs(bucket_name, "shpp/u")
+        gdf = load_shapefile_from_gcs( "shpp/u",bucket)
         
         if gdf is not None:
             # Path to building information JSON file
-            building_data = load_json_from_gcs(bucket_name,"for_teaser")
+            building_data = load_json_from_gcs("for_teaser",bucket)
             st.write(building_data)
             
             # # Path to folder containing .mat files
