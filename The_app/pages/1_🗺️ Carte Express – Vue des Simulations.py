@@ -277,7 +277,7 @@ def main():
                     
                     m = folium.Map(
                         location=[center_lat, center_lon], 
-                        zoom_start=14,
+                        zoom_start=16,
                         tiles='OpenStreetMap'
                     )
                     
