@@ -265,145 +265,167 @@ def main():
             st.error("❌ Failed to load shapefile from Google Cloud Storage")
     
     with tab2:
-        st.subheader("📊 Heat Consumption Analysis")
-        
-        mat_blobs_list = list(client.list_blobs(bucket, prefix="simulation/"))
+            st.subheader("📊 Heat Consumption Analysis")
+            
+            mat_blobs_list = list(client.list_blobs(bucket, prefix="simulation/"))
 
-                            # Find the specific file
-        building_id = "0503100000019674"
-        target_filename = f"{building_id}_result.mat"
+            # Find the specific file for pre-renovation
+            building_id = "0503100000019674"
+            target_filename = f"{building_id}_result.mat"
 
-        # Filter to find your specific file
-        matching_blobs = [blob for blob in mat_blobs_list if blob.name.endswith(target_filename)]
+            # Filter to find your specific file
+            matching_blobs = [blob for blob in mat_blobs_list if blob.name.endswith(target_filename)]
 
-        if matching_blobs:
-            file_blob = matching_blobs[0]  # Get the first (should be only) match
-            st.success(f"✅ Found file: {file_blob.name}")
-        file_path = file_blob.name
-        file_path=download_file_from_gcs(file_path)
-        if True:
-            try:
-                from buildingspy.io.outputfile import Reader
+            if matching_blobs:
+                file_blob = matching_blobs[0]  # Get the first (should be only) match
+                st.success(f"✅ Found pre-renovation file: {file_blob.name}")
                 
-                # Load .mat file
-                r = Reader(file_path, "dymola")
+                # Download the file to local temp location
+                pre_file_path = download_file_from_gcs(file_blob.name)
                 
-                # Get heating power data
-                time, heat_data = r.values('multizone.PHeater[1]')
-                
-                # Convert seconds to months
-                seconds_per_year = 365 * 24 * 3600
-                seconds_per_month = seconds_per_year / 12.0
-                time_months = time / seconds_per_month
-                
-                # Create two columns for before/after comparison
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.markdown("#### 🔥 Pre-Renovation Heating")
-                    
-                    # Plot heating power
-                    fig, ax = plt.subplots(figsize=(8, 5))
-                    ax.plot(time_months, heat_data, label="Pre-renovation", color='red')
-                    ax.set_xticks(np.arange(1, 13))
-                    ax.set_xticklabels([
-                        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-                    ])
-                    ax.set_xlabel("Month")
-                    ax.set_ylabel("Heating Power (W)")
-                    ax.set_title("Pre-Renovation Heating Power")
-                    ax.legend()
-                    ax.grid(True)
-                    st.pyplot(fig)
-                    
-                    # Calculate and display metrics
-                    total_consumption = np.trapz(heat_data, time) / 3600000  # Convert to kWh
-                    max_power = np.max(heat_data)
-                    avg_power = np.mean(heat_data)
-                    
-                    st.metric("Total Annual Consumption", f"{total_consumption:,.0f} kWh")
-                    st.metric("Peak Power", f"{max_power:,.0f} W")
-                    st.metric("Average Power", f"{avg_power:,.0f} W")
-                
-                with col2:
-                    # Find the specific file
-                    building_id = "0503100000013392"
-                    target_filename = f"{building_id}_result.mat"
+                if pre_file_path and os.path.exists(pre_file_path):
+                    try:
+                        from buildingspy.io.outputfile import Reader
+                        
+                        # Load .mat file
+                        r = Reader(pre_file_path, "dymola")
+                        
+                        # Get heating power data
+                        time, heat_data = r.values('multizone.PHeater[1]')
+                        
+                        # Convert seconds to months
+                        seconds_per_year = 365 * 24 * 3600
+                        seconds_per_month = seconds_per_year / 12.0
+                        time_months = time / seconds_per_month
+                        
+                        # Create two columns for before/after comparison
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            st.markdown("#### 🔥 Pre-Renovation Heating")
+                            
+                            # Plot heating power
+                            fig, ax = plt.subplots(figsize=(8, 5))
+                            ax.plot(time_months, heat_data, label="Pre-renovation", color='red')
+                            ax.set_xticks(np.arange(1, 13))
+                            ax.set_xticklabels([
+                                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                            ])
+                            ax.set_xlabel("Month")
+                            ax.set_ylabel("Heating Power (W)")
+                            ax.set_title("Pre-Renovation Heating Power")
+                            ax.legend()
+                            ax.grid(True)
+                            st.pyplot(fig)
+                            
+                            # Calculate and display metrics
+                            total_consumption = np.trapz(heat_data, time) / 3600000  # Convert to kWh
+                            max_power = np.max(heat_data)
+                            avg_power = np.mean(heat_data)
+                            
+                            st.metric("Total Annual Consumption", f"{total_consumption:,.0f} kWh")
+                            st.metric("Peak Power", f"{max_power:,.0f} W")
+                            st.metric("Average Power", f"{avg_power:,.0f} W")
+                        
+                        with col2:
+                            # Find the post-renovation file
+                            post_building_id = "0503100000013392"
+                            post_target_filename = f"{post_building_id}_result.mat"
 
-                    # Filter to find your specific file
-                    matching_blobs = [blob for blob in mat_blobs_list if blob.name.endswith(target_filename)]
+                            # Filter to find post-renovation file
+                            post_matching_blobs = [blob for blob in mat_blobs_list if blob.name.endswith(post_target_filename)]
 
-                    if matching_blobs:
-                        file_blob = matching_blobs[0]  # Get the first (should be only) match
-                        st.success(f"✅ Found file: {file_blob.name}")
-                        post_file_path = file_blob.name
-                        post_file_path=download_file_from_gcs(post_file_path)
+                            if post_matching_blobs:
+                                post_file_blob = post_matching_blobs[0]
+                                st.success(f"✅ Found post-renovation file: {post_file_blob.name}")
+                                
+                                # Download the post-renovation file
+                                post_file_path = download_file_from_gcs(post_file_blob.name)
+                                
+                                if post_file_path and os.path.exists(post_file_path):
+                                    # Load post-renovation data
+                                    r_post = Reader(post_file_path, "dymola")
+                                    time_post, heat_post = r_post.values('multizone.PHeater[1]')
+                                    time_months_post = time_post / seconds_per_month
+                                    
+                                    # Plot post-renovation heating
+                                    fig2, ax2 = plt.subplots(figsize=(8, 5))
+                                    ax2.plot(time_months_post, heat_post, label="Post-renovation", color='green')
+                                    ax2.set_xticks(np.arange(1, 13))
+                                    ax2.set_xticklabels([
+                                        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                                    ])
+                                    ax2.set_xlabel("Month")
+                                    ax2.set_ylabel("Heating Power (W)")
+                                    ax2.set_title("Post-Renovation Heating Power")
+                                    ax2.legend()
+                                    ax2.grid(True)
+                                    st.pyplot(fig2)
+                                    
+                                    # Calculate post-renovation metrics
+                                    total_consumption_post = np.trapz(heat_post, time_post) / 3600000
+                                    max_power_post = np.max(heat_post)
+                                    avg_power_post = np.mean(heat_post)
+                                    
+                                    # Calculate savings
+                                    savings = total_consumption - total_consumption_post
+                                    savings_percent = (savings / total_consumption) * 100
+                                    
+                                    st.metric("Total Annual Consumption", f"{total_consumption_post:,.0f} kWh")
+                                    st.metric("Peak Power", f"{max_power_post:,.0f} W")
+                                    st.metric("Average Power", f"{avg_power_post:,.0f} W")
+                                    st.metric("Annual Savings", f"{savings:,.0f} kWh", f"{savings_percent:.1f}%")
+                                    
+                                    # Comparison chart since both files exist
+                                    st.markdown("#### 📊 Before vs After Comparison")
+                                    
+                                    fig3, ax3 = plt.subplots(figsize=(12, 6))
+                                    ax3.plot(time_months, heat_data, label="Pre-renovation", color='red', alpha=0.8)
+                                    ax3.plot(time_months_post, heat_post, label="Post-renovation", color='green', alpha=0.8)
+                                    ax3.set_xticks(np.arange(1, 13))
+                                    ax3.set_xticklabels([
+                                        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                                    ])
+                                    ax3.set_xlabel("Month")
+                                    ax3.set_ylabel("Heating Power (W)")
+                                    ax3.set_title("Heating Power Comparison: Before vs After Renovation")
+                                    ax3.legend()
+                                    ax3.grid(True)
+                                    st.pyplot(fig3)
+                                    
+                                    # Clean up temporary files
+                                    try:
+                                        os.unlink(post_file_path)
+                                    except:
+                                        pass
+                                else:
+                                    st.error("❌ Failed to download or access post-renovation file")
+                            else:
+                                st.info("📄 Post-renovation data not available")
                         
-                        # Load post-renovation data
-                        r_post = Reader(post_file_path, "dymola")
-                        time_post, heat_post = r_post.values('multizone.PHeater[1]')
-                        time_months_post = time_post / seconds_per_month
-                        
-                        # Plot post-renovation heating
-                        fig2, ax2 = plt.subplots(figsize=(8, 5))
-                        ax2.plot(time_months_post, heat_post, label="Post-renovation", color='green')
-                        ax2.set_xticks(np.arange(1, 13))
-                        ax2.set_xticklabels([
-                            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-                        ])
-                        ax2.set_xlabel("Month")
-                        ax2.set_ylabel("Heating Power (W)")
-                        ax2.set_title("Post-Renovation Heating Power")
-                        ax2.legend()
-                        ax2.grid(True)
-                        st.pyplot(fig2)
-                        
-                        # Calculate post-renovation metrics
-                        total_consumption_post = np.trapz(heat_post, time_post) / 3600000
-                        max_power_post = np.max(heat_post)
-                        avg_power_post = np.mean(heat_post)
-                        
-                        # Calculate savings
-                        savings = total_consumption - total_consumption_post
-                        savings_percent = (savings / total_consumption) * 100
-                        
-                        st.metric("Total Annual Consumption", f"{total_consumption_post:,.0f} kWh")
-                        st.metric("Peak Power", f"{max_power_post:,.0f} W")
-                        st.metric("Average Power", f"{avg_power_post:,.0f} W")
-                        st.metric("Annual Savings", f"{savings:,.0f} kWh", f"{savings_percent:.1f}%")
-                    
-                    else:
-                        st.info("📄 Post-renovation data not available")
-                
-                # Comparison chart if both files exist
-                if os.path.exists(post_file_path):
-                    st.markdown("#### 📊 Before vs After Comparison")
-                    
-                    fig3, ax3 = plt.subplots(figsize=(12, 6))
-                    ax3.plot(time_months, heat_data, label="Pre-renovation", color='red', alpha=0.8)
-                    ax3.plot(time_months_post, heat_post, label="Post-renovation", color='green', alpha=0.8)
-                    ax3.set_xticks(np.arange(1, 13))
-                    ax3.set_xticklabels([
-                        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-                    ])
-                    ax3.set_xlabel("Month")
-                    ax3.set_ylabel("Heating Power (W)")
-                    ax3.set_title("Heating Power Comparison: Before vs After Renovation")
-                    ax3.legend()
-                    ax3.grid(True)
-                    st.pyplot(fig3)
-                    
-            except Exception as e:
-                st.error(f"Error loading energy data: {str(e)}")
-                st.info("Make sure the buildingspy library is installed: `pip install buildingspy`")
-        
-        else:
-            st.warning(f"No energy data found for building {target_building_id}")
-            st.info(f"Expected file: {file_path}")
-    
+                        # Clean up temporary file
+                        try:
+                            os.unlink(pre_file_path)
+                        except:
+                            pass
+                            
+                    except Exception as e:
+                        st.error(f"Error loading energy data: {str(e)}")
+                        st.info("Make sure the buildingspy library is installed: `pip install buildingspy`")
+                        # Clean up on error
+                        try:
+                            if 'pre_file_path' in locals():
+                                os.unlink(pre_file_path)
+                        except:
+                            pass
+                else:
+                    st.error("❌ Failed to download pre-renovation file from GCS")
+            else:
+                st.warning(f"No energy data found for building {building_id}")
+                st.info(f"Expected file pattern: *{target_filename}")
     # Footer
     st.markdown("---")
     st.markdown("**Building Analysis Dashboard** - Interactive map with detailed building information")
