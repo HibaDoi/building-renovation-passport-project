@@ -146,7 +146,7 @@ def get_building_ids(mat_blobs):
 
 
 def load_json_from_gcs(blob_name,bucket):
-    st.write("i am here")
+    
     
     blob_name = f"{blob_name}{'.json'}"
     blob = bucket.blob(blob_name)
@@ -186,7 +186,7 @@ def main():
             # Filter only buildings that have corresponding .mat results
             filtered_gdf = gdf[gdf["object_id_clean"].isin(clean_building_ids
 )]
-            st.write(filtered_gdf.drop(columns=['geometry'], errors='ignore'))
+            
             # Load building information
             # building_data = load_building_info(building_info_path)
             
