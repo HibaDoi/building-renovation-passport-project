@@ -132,7 +132,7 @@ def load_shapefile_from_gcs(blob_prefix,bucket):
 # @st.cache_data
 def get_building_ids(mat_blobs):
     """Get building IDs from .mat files"""
-
+    st.write("ok here")
     mat_files = [blob.name for blob in mat_blobs if blob.name.endswith(".mat")]
     building_ids = [f.replace("_result.mat", "").replace("NL_Building_", "NL.IMBAG.Pand.") for f in mat_files]
     return building_ids, mat_files
