@@ -39,12 +39,6 @@ def load_shapefile_from_gcs():
     """Load shapefile directly from Google Cloud Storage using Streamlit secrets"""
     
     try:
-        st.write("GeoPandas versionjjjjjj:", gpd.__version__)
-        # Create credentials from Streamlit secrets
-        
-        
-        
-        
         # Read shapefile directly from GCS using the gs:// protocol
         
         
