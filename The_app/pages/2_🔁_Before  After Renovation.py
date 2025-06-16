@@ -26,7 +26,7 @@ credentials = service_account.Credentials.from_service_account_info(
 client = storage.Client(credentials=credentials)
 bucket = client.bucket("renodat")
 # Access a specific file directly
-file_path = "u.shp"  # Replace with your actual file path
+file_path = "shpp/u.shp"  # Replace with your actual file path
 blob = bucket.blob(file_path)
 st.write("blooooooooooob:", blob)
 def load_shapefile_from_gcs():
