@@ -74,98 +74,126 @@ def get_building_ids_from_gcs(_client, _bucket, mat_prefix="simulation/"):
     try:
         mat_blobs = list(_client.list_blobs(_bucket, prefix=mat_prefix))
         mat_files = [blob.name for blob in mat_blobs if blob.name.endswith("_result.mat")]
-        building_ids = [
-            f.split('/')[-1].replace("_result.mat", "").replace("NL_Building_", "NL.IMBAG.Pand.") 
-            for f in mat_files
-        ]
+        building_ids = []
+        
+        for f in mat_files:
+            # Extract building ID from filename
+            filename = f.split('/')[-1]  # Get just the filename
+            if filename.startswith("NL_Building_"):
+                building_id = filename.replace("_result.mat", "").replace("NL_Building_", "")
+                building_ids.append(building_id)
+        
         return building_ids, mat_files
     except Exception as e:
         st.error(f"Error accessing GCS bucket: {str(e)}")
         return [], []
 
 def main():
-    st.title("🏢 Building Renovation Passport - Interactive Map")
+    st.title("🏢 Building Renovation Passport - All Buildings Map")
     
     try:
         # Initialize GCS
         client, bucket = init_gcs_client()
         
-        # Load shapefile from GCS
-        with st.spinner("Loading building data from Google Cloud Storage..."):
+        # Load ALL buildings from shapefile
+        with st.spinner("Loading ALL building data from Google Cloud Storage..."):
             gdf = load_shapefile_from_gcs("shpp/u", bucket)
         
         if gdf is None:
             st.error("❌ Failed to load shapefile from Google Cloud Storage")
             st.stop()
         
-        # Get building IDs from .mat files in GCS
-        with st.spinner("Loading simulation results from GCS..."):
-            building_ids, mat_files = get_building_ids_from_gcs(client, bucket)
+        # Get building IDs that have simulation results
+        with st.spinner("Checking simulation availability..."):
+            simulation_building_ids, mat_files = get_building_ids_from_gcs(client, bucket)
         
-        if building_ids:
-            # Filter GDF to only include buildings with simulation results
-            clean_building_ids = [bid.split('/')[-1] for bid in building_ids]
-            filtered_gdf = gdf[gdf["object_id_clean"].isin(clean_building_ids)]
-            st.success(f"✅ Found {len(filtered_gdf)} buildings with simulation results")
-        else:
-            st.warning("⚠️ No simulation results found in GCS. Using all buildings.")
-            filtered_gdf = gdf
+        # Add simulation availability to the dataframe
+        gdf['has_simulation'] = gdf['object_id_clean'].isin(simulation_building_ids)
+        
+        # Statistics
+        total_buildings = len(gdf)
+        buildings_with_sim = len(gdf[gdf['has_simulation']])
+        coverage_percent = (buildings_with_sim / total_buildings * 100) if total_buildings > 0 else 0
+        
+        # Display statistics
+        st.markdown("### 📊 Building Coverage Statistics")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Buildings", total_buildings)
+        with col2:
+            st.metric("With Simulations", buildings_with_sim)
+        with col3:
+            st.metric("Coverage", f"{coverage_percent:.1f}%")
+        
+        st.markdown("---")
         
         # Create two columns for split layout
-        col_map, col_details = st.columns([2, 1])  # Map takes 2/3, details take 1/3
+        col_map, col_details = st.columns([2, 1])
         
         with col_map:
             # Initialize session state
             if 'selected_building_id' not in st.session_state:
                 st.session_state.selected_building_id = None
         
-            st.header("🗺️ Interactive Map")
+            st.header("🗺️ Interactive Map - All Buildings")
+            st.markdown("**Click on any building to see simulation availability**")
         
             try:
                 import folium
                 from streamlit_folium import st_folium
                 
-                # Create base map
-                center_lat = filtered_gdf.geometry.centroid.y.mean()
-                center_lon = filtered_gdf.geometry.centroid.x.mean()
+                # Create base map centered on all buildings
+                center_lat = gdf.geometry.centroid.y.mean()
+                center_lon = gdf.geometry.centroid.x.mean()
                 
                 m = folium.Map(
                     location=[center_lat, center_lon], 
-                    zoom_start=15,
+                    zoom_start=14,
                     tiles='OpenStreetMap'
                 )
                 
-                # Add each building as a clickable polygon
-                for idx, row in filtered_gdf.iterrows():
-                    # Get building coordinates for click detection
+                # Add ALL buildings to the map
+                for idx, row in gdf.iterrows():
+                    # Get building coordinates
                     centroid = row.geometry.centroid
+                    has_simulation = row['has_simulation']
+                    building_id = row['object_id_clean']
                     
-                    # Determine if this building has simulation results
-                    has_results = row['object_id_clean'] in clean_building_ids if building_ids else False
+                    # Determine color based on simulation availability and selection
+                    if st.session_state.selected_building_id == building_id:
+                        color = '#ff6b6b'  # Red for selected
+                        status = "Selected"
+                    elif has_simulation:
+                        color = '#4ecdc4'  # Teal for buildings with simulation
+                        status = "Has Simulation"
+                    else:
+                        color = '#95a5a6'  # Gray for buildings without simulation
+                        status = "No Simulation"
                     
-                    # Add building polygon with custom properties for click detection
+                    # Create popup content
+                    popup_html = f"""
+                    <div style='font-family: Arial; font-size: 12px; min-width: 250px; padding: 10px;'>
+                        <h4 style='margin-top: 0; color: #2c3e50;'>🏢 Building Details</h4>
+                        <hr style='margin: 5px 0;'>
+                        <b>Building ID:</b> {building_id}<br>
+                        <b>Original ID:</b> {row['object_id']}<br>
+                        <b>Simulation Status:</b> <span style='color: {"green" if has_simulation else "red"}; font-weight: bold;'>
+                            {'✅ Available' if has_simulation else '❌ Not Available'}
+                        </span><br>
+                        <b>Coordinates:</b> {centroid.y:.6f}, {centroid.x:.6f}<br>
+                        <b>Building Area:</b> {row.geometry.area:.8f} sq units
+                    </div>
+                    """
+                    
+                    # Add building polygon
                     geojson_feature = folium.GeoJson(
                         row.geometry,
-                        popup=folium.Popup(
-                            html=f"""
-                            <div style='font-family: Arial; font-size: 12px; min-width: 200px;'>
-                                <b>Building ID:</b> {row['object_id_clean']}<br>
-                                <b>Original ID:</b> {row['object_id']}<br>
-                                <b>Has Simulation:</b> {'✅ Yes' if has_results else '❌ No'}<br>
-                                <b>Coordinates:</b> {centroid.y:.6f}, {centroid.x:.6f}
-                            </div>
-                            """,
-                            max_width=300
-                        ),
-                        tooltip=f"Building: {row['object_id_clean']} {'(Has Results)' if has_results else '(No Results)'}",
-                        style_function=lambda feature, building_id=row['object_id_clean'], has_sim=has_results: {
-                            'fillColor': (
-                                '#ff6b6b' if st.session_state.selected_building_id == building_id 
-                                else '#4ecdc4' if has_sim 
-                                else '#95a5a6'
-                            ),
+                        popup=folium.Popup(html=popup_html, max_width=300),
+                        tooltip=f"🏢 {building_id} - {status}",
+                        style_function=lambda feature, fill_color=color: {
+                            'fillColor': fill_color,
                             'color': '#2c3e50',
-                            'weight': 2,
+                            'weight': 1,
                             'fillOpacity': 0.7,
                             'opacity': 1
                         }
@@ -173,16 +201,28 @@ def main():
                     
                     geojson_feature.add_to(m)
                 
-                # Add legend
-                legend_html = '''
+                # Add enhanced legend
+                legend_html = f'''
                 <div style="position: fixed; 
-                            bottom: 50px; left: 50px; width: 150px; height: 90px; 
+                            bottom: 50px; left: 50px; width: 200px; height: 140px; 
                             background-color: white; border:2px solid grey; z-index:9999; 
-                            font-size:14px; padding: 10px">
-                <p><b>Legend</b></p>
-                <p><i class="fa fa-square fa-1x" style="color:#4ecdc4"></i> Has Results</p>
-                <p><i class="fa fa-square fa-1x" style="color:#95a5a6"></i> No Results</p>
-                <p><i class="fa fa-square fa-1x" style="color:#ff6b6b"></i> Selected</p>
+                            font-size:12px; padding: 15px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.3);">
+                <h4 style="margin-top: 0; color: #2c3e50;">🗺️ Map Legend</h4>
+                <div style="margin: 8px 0;">
+                    <span style="display: inline-block; width: 15px; height: 15px; background-color: #4ecdc4; margin-right: 8px;"></span>
+                    <span>Has Simulation ({buildings_with_sim})</span>
+                </div>
+                <div style="margin: 8px 0;">
+                    <span style="display: inline-block; width: 15px; height: 15px; background-color: #95a5a6; margin-right: 8px;"></span>
+                    <span>No Simulation ({total_buildings - buildings_with_sim})</span>
+                </div>
+                <div style="margin: 8px 0;">
+                    <span style="display: inline-block; width: 15px; height: 15px; background-color: #ff6b6b; margin-right: 8px;"></span>
+                    <span>Selected Building</span>
+                </div>
+                <div style="margin-top: 10px; font-size: 10px; color: #666;">
+                    Coverage: {coverage_percent:.1f}%
+                </div>
                 </div>
                 '''
                 m.get_root().html.add_child(folium.Element(legend_html))
@@ -190,13 +230,13 @@ def main():
                 # Display map and capture clicks
                 map_data = st_folium(
                     m, 
-                    key="building_map",
+                    key="all_buildings_map",
                     width=800, 
                     height=600,
                     returned_objects=["last_object_clicked"]
                 )
                 
-                # Process click events using coordinates
+                # Process click events
                 clicked_building_id = None
                 
                 if map_data.get('last_object_clicked'):
@@ -206,19 +246,18 @@ def main():
                         click_lat = click_data['lat']
                         click_lng = click_data['lng']
                         
-                        # Find the closest building to the click
+                        # Find the building that was clicked
                         from shapely.geometry import Point
                         click_point = Point(click_lng, click_lat)
                         
                         min_distance = float('inf')
                         closest_building = None
                         
-                        for idx, row in filtered_gdf.iterrows():
+                        for idx, row in gdf.iterrows():
                             if row.geometry.contains(click_point):
                                 closest_building = row['object_id_clean']
                                 break
                             else:
-                                # Find closest centroid
                                 centroid = row.geometry.centroid
                                 distance = click_point.distance(centroid)
                                 if distance < min_distance:
@@ -228,46 +267,10 @@ def main():
                         if closest_building:
                             clicked_building_id = closest_building
                 
-                # Update session state if we found a building
+                # Update session state
                 if clicked_building_id:
                     st.session_state.selected_building_id = clicked_building_id
-                
-                # Show currently selected building info
-                if st.session_state.selected_building_id:
-                    selected_building = filtered_gdf[
-                        filtered_gdf['object_id_clean'] == st.session_state.selected_building_id
-                    ]
-                    
-                    if not selected_building.empty:
-                        building_info = selected_building.iloc[0]
-                        
-                        st.subheader(f"🏠 Selected: {st.session_state.selected_building_id}")
-                        
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.write("**Building Details:**")
-                            st.write(f"- **Clean ID:** {building_info['object_id_clean']}")
-                            st.write(f"- **Original ID:** {building_info['object_id']}")
-                            
-                        with col2:
-                            st.write("**Geometry Info:**")
-                            centroid = building_info.geometry.centroid
-                            st.write(f"- **Centroid:** ({centroid.y:.6f}, {centroid.x:.6f})")
-                            st.write(f"- **Area:** {building_info.geometry.area:.8f}")
-                        
-                        # Check if building has simulation results
-                        has_simulation = building_info['object_id_clean'] in clean_building_ids
-                        if has_simulation:
-                            st.success("✅ This building has simulation results available!")
-                        else:
-                            st.info("ℹ️ No simulation results available for this building")
-                
-                # Show currently selected building in sidebar
-                if st.session_state.selected_building_id:
-                    st.info(f"🎯 **Currently Selected:** {st.session_state.selected_building_id}")
-                    if st.button("Clear Selection"):
-                        st.session_state.selected_building_id = None
-                        st.rerun()
+                    st.rerun()
         
             except ImportError:
                 st.error("📦 **streamlit-folium not installed!**")
@@ -275,85 +278,121 @@ def main():
                 st.info("Install the package above to enable interactive map functionality.")
         
         with col_details:
-            st.header("📊 Building Details")
+            st.header("🔍 Building Inspector")
             
             if st.session_state.selected_building_id:
                 building_id = st.session_state.selected_building_id
                 
-                # Check if this building has results
-                if building_id in clean_building_ids:
-                    st.markdown("### 🔥 Energy Analysis Available")
+                # Get building data
+                selected_building = gdf[gdf['object_id_clean'] == building_id]
+                
+                if not selected_building.empty:
+                    building_data = selected_building.iloc[0]
+                    has_simulation = building_data['has_simulation']
                     
-                    # Find the corresponding mat file
-                    mat_file_pattern = f"NL_Building_{building_id.replace('NL.IMBAG.Pand.', '')}_result.mat"
-                    matching_files = [f for f in mat_files if f.endswith(mat_file_pattern)]
+                    st.markdown(f"### 🏢 Building: `{building_id}`")
                     
-                    if matching_files:
-                        st.success(f"📁 **Simulation File:** `{matching_files[0]}`")
+                    # Simulation status with prominent display
+                    if has_simulation:
+                        st.success("✅ **SIMULATION AVAILABLE**")
+                        st.markdown("This building has energy simulation data!")
                         
-                        if st.button("🚀 View Energy Analysis", key="energy_btn"):
-                            st.session_state.show_energy_tab = True
-                            st.info("Switch to the Energy Analysis tab to view detailed results!")
+                        # Find the simulation file
+                        building_id_short = building_id.replace('NL.IMBAG.Pand.', '')
+                        mat_file_pattern = f"NL_Building_{building_id_short}_result.mat"
+                        matching_files = [f for f in mat_files if f.endswith(mat_file_pattern)]
+                        
+                        if matching_files:
+                            st.info(f"📁 **File:** `{matching_files[0]}`")
+                            
+                            if st.button("🚀 Analyze Energy Data", key="analyze_btn"):
+                                st.balloons()
+                                st.success("Ready for energy analysis! 🎯")
                     else:
-                        st.warning("Simulation file pattern not found")
-                        
-                    # Show building properties if available
+                        st.error("❌ **NO SIMULATION AVAILABLE**")
+                        st.markdown("This building does not have energy simulation data.")
+                    
+                    # Building details
+                    st.markdown("### 📋 Building Details")
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.markdown("**Identification:**")
+                        st.write(f"- **Clean ID:** {building_data['object_id_clean']}")
+                        st.write(f"- **Original ID:** {building_data['object_id']}")
+                    
+                    with col2:
+                        st.markdown("**Geometry:**")
+                        centroid = building_data.geometry.centroid
+                        st.write(f"- **Lat:** {centroid.y:.6f}")
+                        st.write(f"- **Lng:** {centroid.x:.6f}")
+                        st.write(f"- **Area:** {building_data.geometry.area:.8f}")
+                    
+                    # Try to load additional building properties
                     try:
-                        # Try to load building info from JSON
-                        building_data_blob = bucket.blob("for_teaser.json")
-                        if building_data_blob.exists():
-                            json_string = building_data_blob.download_as_text()
-                            building_data = json.loads(json_string)
+                        building_info_blob = bucket.blob("for_teaser.json")
+                        if building_info_blob.exists():
+                            json_string = building_info_blob.download_as_text()
+                            building_info_data = json.loads(json_string)
                             
                             # Find building info
-                            building_info = None
-                            if isinstance(building_data, list):
-                                for building in building_data:
+                            building_props = None
+                            if isinstance(building_info_data, list):
+                                for building in building_info_data:
                                     if building.get('id') == building_id:
-                                        building_info = building
+                                        building_props = building
                                         break
-                            elif isinstance(building_data, dict):
-                                building_info = building_data.get(building_id)
+                            elif isinstance(building_info_data, dict):
+                                building_props = building_info_data.get(building_id)
                             
-                            if building_info:
-                                st.markdown("### 🏢 Building Properties")
+                            if building_props:
+                                st.markdown("### 🏗️ Building Properties")
                                 
-                                col1, col2 = st.columns(2)
-                                with col1:
-                                    if 'year_built' in building_info:
-                                        st.metric("Year Built", building_info['year_built'])
-                                    if 'roof_type' in building_info:
-                                        st.write(f"**Roof Type:** {building_info['roof_type'].title()}")
+                                prop_col1, prop_col2 = st.columns(2)
+                                with prop_col1:
+                                    if 'year_built' in building_props:
+                                        st.metric("Year Built", building_props['year_built'])
+                                    if 'roof_type' in building_props:
+                                        st.write(f"**Roof Type:** {building_props['roof_type'].title()}")
                                 
-                                with col2:
-                                    if 'roof_h_typ' in building_info:
-                                        st.metric("Roof Height", f"{building_info['roof_h_typ']:.1f} m")
-                                    if 'ground_lvl' in building_info:
-                                        st.metric("Ground Level", f"{building_info['ground_lvl']:.1f} m")
+                                with prop_col2:
+                                    if 'roof_h_typ' in building_props:
+                                        st.metric("Roof Height", f"{building_props['roof_h_typ']:.1f} m")
+                                    if 'ground_lvl' in building_props:
+                                        st.metric("Ground Level", f"{building_props['ground_lvl']:.1f} m")
                                 
-                                with st.expander("🔍 Full Building Data"):
-                                    st.json(building_info)
+                                with st.expander("🔍 All Properties"):
+                                    st.json(building_props)
                     except Exception as e:
-                        st.warning(f"Could not load building properties: {str(e)}")
+                        st.info("ℹ️ Additional building properties not available")
+                    
+                    # Clear selection button
+                    if st.button("🗑️ Clear Selection", key="clear_btn"):
+                        st.session_state.selected_building_id = None
+                        st.rerun()
                         
-                else:
-                    st.info("ℹ️ **No simulation data available** for the selected building.")
-                    st.write("Buildings with simulation results are shown in **teal** on the map.")
             else:
-                st.info("👆 **Click on a building** in the map to see its details here.")
+                st.info("👆 **Click on any building** in the map to inspect it!")
+                st.markdown("### 🎯 Quick Stats")
+                st.write(f"- **Total Buildings:** {total_buildings}")
+                st.write(f"- **With Simulations:** {buildings_with_sim}")
+                st.write(f"- **Without Simulations:** {total_buildings - buildings_with_sim}")
+                st.write(f"- **Coverage:** {coverage_percent:.1f}%")
                 
-                # Show summary statistics
-                st.markdown("### 📈 Summary")
-                st.metric("Total Buildings", len(gdf))
-                st.metric("Buildings with Results", len(filtered_gdf))
-                
-                if building_ids:
-                    coverage = (len(filtered_gdf) / len(gdf)) * 100
-                    st.metric("Coverage", f"{coverage:.1f}%")
+                # Show some example building IDs
+                if buildings_with_sim > 0:
+                    st.markdown("### 🏢 Buildings with Simulations (Sample)")
+                    sample_buildings = gdf[gdf['has_simulation']]['object_id_clean'].head(5).tolist()
+                    for i, building in enumerate(sample_buildings, 1):
+                        st.write(f"{i}. `{building}`")
+                    
+                    if buildings_with_sim > 5:
+                        st.write(f"... and {buildings_with_sim - 5} more")
     
     except Exception as e:
         st.error(f"❌ **Application Error:** {str(e)}")
         st.info("Please check your Google Cloud Storage configuration and credentials.")
+        st.exception(e)  # This will show the full error traceback
 
 if __name__ == "__main__":
     main()
