@@ -9,6 +9,10 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from google.cloud import storage
+from google.oauth2 import service_account
+import tempfile
+import os
 
 # 🎨 Page Configuration
 st.set_page_config(
@@ -17,6 +21,20 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+credentials = service_account.Credentials.from_service_account_info(
+    st.secrets["gcp_service_account"]
+)
+# Initialize GCS client
+client = storage.Client(credentials=credentials)
+bucket = client.bucket("renodat")
+mat_blobs = client.list_blobs(
+    bucket,
+    prefix="simulation/",   # ← attention au slash final
+)
+
+
+
 
 # 🎨 Custom CSS for beautiful styling
 st.markdown("""
@@ -127,10 +145,11 @@ with st.sidebar:
     # Building selection
     st.markdown("### 🏢 Building Selection")
     
-    mat_folder = "Open_modula_maybe/simulation_results"
     
-    if os.path.exists(mat_folder):
-        mat_files = [f for f in os.listdir(mat_folder) if f.endswith(".mat")]
+    
+    if True:
+        mat_files = [blob.name for blob in mat_blobs if blob.name.endswith(".mat")]
+
         
         if mat_files:
             # Create building mapping

@@ -42,7 +42,172 @@ if 'selected_building_id' not in st.session_state:
 if 'selected_coordinates' not in st.session_state:
     st.session_state.selected_coordinates = None
 
+# =============================================================================
+# FIXED STREAMLIT-FOLIUM IMPLEMENTATION WITH PROPER CLICK HANDLING
+# =============================================================================
+st.header("🗺️ Interactive Map (Click on buildings)")
 
+try:
+    import folium
+    from streamlit_folium import st_folium
+    
+    # Create base map
+    center_lat = filtered_gdf.geometry.centroid.y.mean()
+    center_lon = filtered_gdf.geometry.centroid.x.mean()
+    
+    m = folium.Map(
+        location=[center_lat, center_lon], 
+        zoom_start=15,
+        tiles='OpenStreetMap'
+    )
+    
+    # Add each building as a clickable polygon
+    for idx, row in filtered_gdf.iterrows():
+        # Get building coordinates for click detection
+        centroid = row.geometry.centroid
+        
+        # Add building polygon with custom properties for click detection
+        geojson_feature = folium.GeoJson(
+            row.geometry,
+            popup=folium.Popup(
+                html=f"""
+                <div style='font-family: Arial; font-size: 12px; min-width: 200px;'>
+                    <b>Building ID:</b> {row['object_id_clean']}<br>
+                    <b>Original ID:</b> {row['object_id']}<br>
+                    <b>Index:</b> {idx}<br>
+                    <b>Coordinates:</b> {centroid.y:.6f}, {centroid.x:.6f}
+                </div>
+                """,
+                max_width=300
+            ),
+            tooltip=f"Click me! Building: {row['object_id_clean']}",
+            style_function=lambda feature, building_id=row['object_id_clean']: {
+                'fillColor': '#ff6b6b' if st.session_state.selected_building_id == building_id else '#4ecdc4',
+                'color': '#2c3e50',
+                'weight': 2,
+                'fillOpacity': 0.7,
+                'opacity': 1
+            }
+        )
+        
+        # Add custom properties to the GeoJson for identification
+        geojson_feature.add_child(folium.Tooltip(f"Building: {row['object_id_clean']}"))
+        geojson_feature.add_to(m)
+    
+    # Debug section - show what we're receiving from map clicks
+    st.subheader("🔍 Debug Information")
+    
+    # Display map and capture clicks with detailed return objects
+    map_data = st_folium(
+        m, 
+        key="building_map",
+        width=800, 
+        height=600,
+        returned_objects=["last_object_clicked", "last_object_clicked_popup", "last_object_clicked_tooltip", "all_drawings"]
+    )
+    
+    # Debug: Show all returned data
+    with st.expander("🔧 Raw Map Data (for debugging)", expanded=False):
+        st.json(map_data)
+    
+    # Process click events - Multiple approaches for robustness
+    clicked_building_id = None
+    
+    # Method 1: Try to extract from popup
+    if map_data.get('last_object_clicked_popup'):
+        popup_content = str(map_data['last_object_clicked_popup'])
+        st.write(f"**Popup Content:** {popup_content}")
+        
+        # More robust parsing
+        try:
+            if 'Building ID:</b>' in popup_content:
+                building_id = popup_content.split('Building ID:</b> ')[1].split('<br>')[0].strip()
+                clicked_building_id = building_id
+                st.success(f"✅ Extracted from popup: **{building_id}**")
+        except Exception as e:
+            st.error(f"Error parsing popup: {e}")
+    
+    # Method 2: Try to extract from tooltip
+    if map_data.get('last_object_clicked_tooltip') and not clicked_building_id:
+        tooltip_content = str(map_data['last_object_clicked_tooltip'])
+        st.write(f"**Tooltip Content:** {tooltip_content}")
+        
+        try:
+            if 'Building:' in tooltip_content:
+                building_id = tooltip_content.split('Building: ')[1].strip()
+                clicked_building_id = building_id
+                st.success(f"✅ Extracted from tooltip: **{building_id}**")
+        except Exception as e:
+            st.error(f"Error parsing tooltip: {e}")
+    
+    # Method 3: Use coordinates to find the building
+    if map_data.get('last_object_clicked') and not clicked_building_id:
+        click_data = map_data['last_object_clicked']
+        st.write(f"**Click Coordinates:** {click_data}")
+        
+        if click_data and 'lat' in click_data and 'lng' in click_data:
+            click_lat = click_data['lat']
+            click_lng = click_data['lng']
+            
+            # Find the closest building to the click
+            from shapely.geometry import Point
+            click_point = Point(click_lng, click_lat)
+            
+            min_distance = float('inf')
+            closest_building = None
+            
+            for idx, row in filtered_gdf.iterrows():
+                if row.geometry.contains(click_point):
+                    closest_building = row['object_id_clean']
+                    break
+                else:
+                    # Find closest centroid
+                    centroid = row.geometry.centroid
+                    distance = click_point.distance(centroid)
+                    if distance < min_distance:
+                        min_distance = distance
+                        closest_building = row['object_id_clean']
+            
+            if closest_building:
+                clicked_building_id = closest_building
+                st.success(f"✅ Found by coordinates: **{closest_building}**")
+                if min_distance > 0:
+                    st.info(f"Distance from centroid: {min_distance:.6f}")
+    
+    # Update session state if we found a building
+    if clicked_building_id:
+        st.session_state.selected_building_id = clicked_building_id
+        
+        # Get building details
+        selected_building = filtered_gdf[filtered_gdf['object_id_clean'] == clicked_building_id]
+        if not selected_building.empty:
+            building_info = selected_building.iloc[0]
+            
+            st.subheader(f"🏠 Selected Building: {clicked_building_id}")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write("**Building Details:**")
+                st.write(f"- **Clean ID:** {building_info['object_id_clean']}")
+                st.write(f"- **Original ID:** {building_info['object_id']}")
+                
+            with col2:
+                st.write("**Geometry Info:**")
+                centroid = building_info.geometry.centroid
+                st.write(f"- **Centroid:** ({centroid.y:.6f}, {centroid.x:.6f})")
+                st.write(f"- **Area:** {building_info.geometry.area:.8f}")
+    
+    # Show currently selected building
+    if st.session_state.selected_building_id:
+        st.info(f"🎯 **Currently Selected:** {st.session_state.selected_building_id}")
+        if st.button("Clear Selection"):
+            st.session_state.selected_building_id = None
+            st.rerun()
+
+except ImportError:
+    st.error("📦 **streamlit-folium not installed!**")
+    st.code("pip install streamlit-folium", language="bash")
+    st.info("Install the package above to enable interactive map functionality.")
 
 # =============================================================================
 # PYDECK IMPLEMENTATION WITH CLICK EVENTS
