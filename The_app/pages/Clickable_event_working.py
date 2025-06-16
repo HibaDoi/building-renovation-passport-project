@@ -362,13 +362,18 @@ def main():
                         key="all_buildings_map",
                         width=800, 
                         height=600,
-                        returned_objects=["last_object_clicked_popup"]
+                        returned_objects=["last_object_clicked", "last_object_clicked_popup", "all_drawings"]
                     )
                     
-                    # Process click events - Fixed click detection
+                    # Process click events - Improved click detection
                     clicked_building_id = None
                     
-                    if map_data.get('last_object_clicked_popup'):
+                    # Debug the map data
+                    with st.expander("🐛 Debug: Map Click Data"):
+                        st.write("Map data:", map_data)
+                    
+                    # Method 1: Try popup data first
+                    if map_data and 'last_object_clicked_popup' in map_data and map_data['last_object_clicked_popup']:
                         popup_data = map_data['last_object_clicked_popup']
                         if popup_data:
                             # Extract building ID from popup content
@@ -378,9 +383,10 @@ def main():
                             match = re.search(r'Building ID:</b> (NL\.IMBAG\.Pand\.\d+)', popup_content)
                             if match:
                                 clicked_building_id = match.group(1)
+                                st.success(f"Clicked building detected via popup: {clicked_building_id}")
                     
-                    # Fallback: use coordinate-based detection if popup method fails
-                    if not clicked_building_id and map_data.get('last_object_clicked'):
+                    # Method 2: Try coordinates
+                    if not clicked_building_id and map_data and 'last_object_clicked' in map_data and map_data['last_object_clicked']:
                         click_data = map_data['last_object_clicked']
                         
                         if click_data and 'lat' in click_data and 'lng' in click_data:
@@ -395,6 +401,7 @@ def main():
                             for idx, row in gdf.iterrows():
                                 if row.geometry.contains(click_point):
                                     clicked_building_id = row['object_id_clean']
+                                    st.success(f"Clicked building detected via coordinates: {clicked_building_id}")
                                     break
                             
                             # If not inside any building, find the closest one
@@ -411,6 +418,7 @@ def main():
                                 
                                 if closest_building and min_distance < 0.001:  # Only if very close
                                     clicked_building_id = closest_building
+                                    st.success(f"Clicked building detected via proximity: {clicked_building_id}")
                     
                     # Update session state if a building was clicked
                     if clicked_building_id and clicked_building_id != st.session_state.selected_building_id:
@@ -452,23 +460,35 @@ def main():
                             mat_file_pattern = f"NL_Building_{building_number}_result.mat"
                             matching_files = [f for f in mat_files if f.endswith(mat_file_pattern)]
                             
-                            if matching_files:
-                                st.info(f"📁 **File:** `{matching_files[0]}`")
-                                
-                                # Add button to plot energy consumption
-                                col_btn1, col_btn2 = st.columns(2)
-                                with col_btn1:
-                                    if st.button("🔥 Plot Energy Consumption", key="plot_energy_btn", type="primary"):
-                                        st.session_state.show_energy_plot = True
-                                        st.rerun()
-                                
-                                with col_btn2:
-                                    if st.button("📊 Go to Energy Tab", key="go_to_energy_tab"):
-                                        st.session_state.show_energy_plot = True
-                                        st.info("Switch to the Energy Analysis tab to see the plot!")
-                                
-                            else:
-                                st.warning(f"⚠️ Expected file `{mat_file_pattern}` not found in simulation files")
+                            # Debug info
+                            with st.expander("🔍 Debug: Simulation File Info"):
+                                st.write(f"Looking for pattern: `{mat_file_pattern}`")
+                                st.write(f"Building number: `{building_number}`")
+                                st.write(f"Found {len(matching_files)} matching files")
+                                if matching_files:
+                                    st.write(f"Matching file: `{matching_files[0]}`")
+                                else:
+                                    st.write("Available .mat files (first 5):")
+                                    for i, f in enumerate(mat_files[:5]):
+                                        st.write(f"  {i+1}. `{f}`")
+                            
+                            # Always show the button, even if file not found
+                            st.markdown("### 🔥 Energy Analysis")
+                            
+                            # Add button to plot energy consumption
+                            col_btn1, col_btn2 = st.columns(2)
+                            with col_btn1:
+                                if st.button("🔥 Plot Energy Consumption", key="plot_energy_btn", type="primary", use_container_width=True):
+                                    st.session_state.show_energy_plot = True
+                                    st.rerun()
+                            
+                            with col_btn2:
+                                if st.button("📊 Go to Energy Tab", key="go_to_energy_tab", use_container_width=True):
+                                    st.session_state.show_energy_plot = True
+                                    st.info("Switch to the Energy Analysis tab to see the plot!")
+                            
+                            if not matching_files:
+                                st.warning(f"⚠️ Note: Expected file `{mat_file_pattern}` not found, but you can still try to plot.")
                                 
                         else:
                             st.error("❌ **NO SIMULATION AVAILABLE**")
