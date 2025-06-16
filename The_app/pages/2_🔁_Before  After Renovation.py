@@ -25,12 +25,16 @@ credentials = service_account.Credentials.from_service_account_info(
 # Initialize GCS client
 client = storage.Client(credentials=credentials)
 bucket = client.bucket("renodat")
-# Access a specific file directly
-file_path = "shpp/u.shp"  # Replace with your actual file path
-blob = bucket.blob(file_path)
-st.write("blooooooooooob:", blob)
-if blob.exists():
-    print("File exists!")
+# # Access a specific file directly
+# file_path = "shpp/u.shp"  # Replace with your actual file path
+# blob = bucket.blob(file_path)
+# st.write("blooooooooooob:", blob)
+
+# List all files in the bucket
+print("All files in bucket:")
+for blob in bucket.list_blobs():
+    print(f"- {blob.name}")
+
 def load_shapefile_from_gcs():
     """Load shapefile directly from Google Cloud Storage using Streamlit secrets"""
     
