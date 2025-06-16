@@ -254,7 +254,7 @@ def main():
         
         
                             # Find the specific file
-        building_id = "NL_Building_0503100000019674"
+        building_id = "0503100000019674"
         target_filename = f"{building_id}_result.mat"
 
         # Filter to find your specific file
@@ -312,7 +312,7 @@ def main():
                 
                 with col2:
                     # Find the specific file
-                    building_id = "NL_Building_0503100000013392"
+                    building_id = "0503100000013392"
                     target_filename = f"{building_id}_result.mat"
 
                     # Filter to find your specific file
