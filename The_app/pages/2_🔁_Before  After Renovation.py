@@ -34,8 +34,7 @@ bucket = client.bucket("renodat")
 blob = bucket.blob("shpp/u.shp")
 
 # Now it should exist
-if blob.exists():
-    st.write("File found!")
+
 
 def load_shapefile_from_gcs():
     """Load shapefile directly from Google Cloud Storage using Streamlit secrets"""
@@ -360,5 +359,5 @@ def main():
 #     st.markdown("---")
 #     st.markdown("**Building Analysis Dashboard** - Interactive map with detailed building information")
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
