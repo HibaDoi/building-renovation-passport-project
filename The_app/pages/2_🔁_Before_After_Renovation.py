@@ -139,6 +139,15 @@ def load_shapefile_from_gcs(bucket_name, blob_prefix):
 #     else:
 #         return [], []
 
+def load_json_from_gcs(bucket_name, blob_name):
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    
+    # Download as text and parse
+    json_string = blob.download_as_text()
+    data = json.loads(json_string)
+    return data
 # Main App
 def main():
     st.title("🗺️ Building Analysis Dashboard")
@@ -151,12 +160,13 @@ def main():
         # Load shapefile from GCS
         gdf = load_shapefile_from_gcs(bucket_name, "shpp/u")
         
-#         if gdf is not None:
-#             # Path to building information JSON file
-#             building_info_path = "_2_Info_extraction/for_teaser.json"
+        if gdf is not None:
+            # Path to building information JSON file
+            building_data = load_json_from_gcs(bucket_name,"for_teaser")
+            st.write(building_data)
             
-#             # Path to folder containing .mat files
-#             results_folder = "Open_modula_maybe/simulation_results"
+            # # Path to folder containing .mat files
+            # results_folder = "Open_modula_maybe/simulation_results"
             
 #             # Get all building IDs from the .mat filenames
 #             building_ids, mat_files = get_building_ids(results_folder)
