@@ -381,31 +381,13 @@ CHART_COLORS = {
 }
 
 # Plotly layout template for white background
-def get_plot_layout(title="", height=400):
-    return dict(
-        title=dict(
-            text=title,
-            font=dict(size=18, color='#2C3E50', family='Arial, sans-serif'),
-            x=0.5,
-            xanchor='center'
-        ),
+def get_plot_layout(title="", height=400, is_subplot=False):
+    layout = dict(
         height=height,
         margin=dict(l=60, r=30, t=60, b=40),
         paper_bgcolor='white',
         plot_bgcolor='white',
         font=dict(color='#2C3E50', size=12, family='Arial, sans-serif'),
-        xaxis=dict(
-            gridcolor='#E9ECEF',
-            zerolinecolor='#DEE2E6',
-            tickfont=dict(color='#2C3E50'),
-            titlefont=dict(color='#2C3E50')
-        ),
-        yaxis=dict(
-            gridcolor='#E9ECEF',
-            zerolinecolor='#DEE2E6',
-            tickfont=dict(color='#2C3E50'),
-            titlefont=dict(color='#2C3E50')
-        ),
         legend=dict(
             bgcolor='rgba(255,255,255,0.9)',
             bordercolor='#DEE2E6',
@@ -420,6 +402,32 @@ def get_plot_layout(title="", height=400):
             bordercolor='#DEE2E6'
         )
     )
+    
+    # Only add title if provided and not a subplot
+    if title and not is_subplot:
+        layout['title'] = dict(
+            text=title,
+            font=dict(size=18, color='#2C3E50', family='Arial, sans-serif'),
+            x=0.5,
+            xanchor='center'
+        )
+    
+    # Only add axis properties if not a subplot
+    if not is_subplot:
+        layout['xaxis'] = dict(
+            gridcolor='#E9ECEF',
+            zerolinecolor='#DEE2E6',
+            tickfont=dict(color='#2C3E50'),
+            titlefont=dict(color='#2C3E50')
+        )
+        layout['yaxis'] = dict(
+            gridcolor='#E9ECEF',
+            zerolinecolor='#DEE2E6',
+            tickfont=dict(color='#2C3E50'),
+            titlefont=dict(color='#2C3E50')
+        )
+    
+    return layout
 
 # 📊 Sidebar Configuration
 with st.sidebar:
@@ -639,8 +647,16 @@ if selected_files:
                     gridcolor='#E9ECEF' if show_grid else 'rgba(0,0,0,0)'
                 )
                 
-                layout = get_plot_layout(f"{building_name} - Annual Performance", chart_height * 1.5)
+                layout = get_plot_layout(f"{building_name} - Annual Performance", chart_height * 1.5, is_subplot=True)
                 fig.update_layout(**layout)
+                fig.update_layout(
+                    title=dict(
+                        text=f"{building_name} - Annual Performance",
+                        font=dict(size=18, color='#2C3E50', family='Arial, sans-serif'),
+                        x=0.5,
+                        xanchor='center'
+                    )
+                )
                 
                 st.plotly_chart(fig, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
@@ -837,8 +853,16 @@ if selected_files:
                     row=2, col=2
                 )
                 
-                layout = get_plot_layout(f"{building_name} - Monthly Analysis", chart_height * 1.8)
+                layout = get_plot_layout(f"{building_name} - Monthly Analysis", chart_height * 1.8, is_subplot=True)
                 fig.update_layout(**layout)
+                fig.update_layout(
+                    title=dict(
+                        text=f"{building_name} - Monthly Analysis",
+                        font=dict(size=18, color='#2C3E50', family='Arial, sans-serif'),
+                        x=0.5,
+                        xanchor='center'
+                    )
+                )
                 
                 # Update axes
                 fig.update_xaxes(gridcolor='#E9ECEF' if show_grid else 'rgba(0,0,0,0)')
@@ -957,8 +981,16 @@ if selected_files:
                 )
                 
                 # Update layout
-                layout = get_plot_layout("Building Portfolio Overview", chart_height * 1.8)
+                layout = get_plot_layout("Building Portfolio Overview", chart_height * 1.8, is_subplot=True)
                 fig.update_layout(**layout)
+                fig.update_layout(
+                    title=dict(
+                        text="Building Portfolio Overview",
+                        font=dict(size=18, color='#2C3E50', family='Arial, sans-serif'),
+                        x=0.5,
+                        xanchor='center'
+                    )
+                )
                 
                 # Update x-axes for time series
                 fig.update_xaxes(
