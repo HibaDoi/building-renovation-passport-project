@@ -1,0 +1,6 @@
+Shapefile processing output location:
+C:\Users\hp\AppData\Local\Temp\tmpblawrsv3
+
+Generated files:
+- u_data.geojson
+- u_data.csv
