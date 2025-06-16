@@ -254,7 +254,7 @@ def main():
         
         target_building_id = "NL.IMBAG.Pand.0503100000019674"
         file_path = next((s for s in mat_files
-                   if s.endswith(f"{'0503100000019674'}.mat")), None)
+                   if s.endswith(f"{'0503100000019674_result'}.mat")), None)
         
         if True:
             try:
@@ -303,7 +303,7 @@ def main():
                 
                 with col2:
                     post_file_path = next((s for s in mat_files
-                   if s.endswith(f"{'0503100000013392'}.mat")), None)
+                   if s.endswith(f"{'0503100000013392_result'}.mat")), None)
                     if os.path.exists(post_file_path):
                         st.markdown("#### 🌱 Post-Renovation Heating")
                         
