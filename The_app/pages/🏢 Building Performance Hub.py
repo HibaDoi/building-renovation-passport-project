@@ -33,18 +33,38 @@ mat_blobs = client.list_blobs(
     prefix="simulation/",   # ← attention au slash final
 )
 
-# 🎨 Custom CSS for beautiful styling
+# 🎨 Custom CSS for beautiful styling - Enhanced for better background
 st.markdown("""
 <style>
+    /* Force gradient background on all main containers */
+    .stApp {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+    
+    .main .block-container {
+        background: transparent !important;
+        padding-top: 1rem !important;
+    }
+    
     /* Main background */
     .main {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
         padding: 0rem 1rem;
+    }
+    
+    /* Override default Streamlit backgrounds */
+    .stApp > div:first-child {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+    
+    /* Force remove white backgrounds */
+    .css-18e3th9, .css-1d391kg, .css-12oz5g7 {
+        background: transparent !important;
     }
     
     /* Custom container */
     .dashboard-container {
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.1) !important;
         backdrop-filter: blur(10px);
         border-radius: 20px;
         border: 1px solid rgba(255, 255, 255, 0.2);
@@ -58,7 +78,7 @@ st.markdown("""
         font-size: 2.5rem;
         font-weight: 700;
         text-align: center;
-        color: white;
+        color: white !important;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         margin-bottom: 1rem;
         background: linear-gradient(45deg, #fff, #e8f4ff);
@@ -69,7 +89,7 @@ st.markdown("""
     
     /* Metric cards - smaller */
     .metric-card-small {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.2) !important;
         border-radius: 10px;
         padding: 1rem;
         margin: 0.25rem;
@@ -87,20 +107,20 @@ st.markdown("""
     .metric-value-small {
         font-size: 1.8rem;
         font-weight: bold;
-        color: #fff;
+        color: #fff !important;
         margin: 0.25rem 0;
     }
     
     .metric-label-small {
         font-size: 0.85rem;
-        color: rgba(255, 255, 255, 0.8);
+        color: rgba(255, 255, 255, 0.8) !important;
         text-transform: uppercase;
     }
     
     /* Compact info box */
     .info-box-compact {
-        background: linear-gradient(135deg, #74b9ff, #0984e3);
-        color: white;
+        background: linear-gradient(135deg, #74b9ff, #0984e3) !important;
+        color: white !important;
         padding: 0.75rem;
         border-radius: 8px;
         margin: 0.5rem 0;
@@ -110,24 +130,46 @@ st.markdown("""
     
     /* Sidebar styling */
     .css-1d391kg {
-        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%) !important;
     }
     
     /* Tab styling */
     .stTabs [data-baseweb="tab-list"] {
-        background-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(255, 255, 255, 0.1) !important;
         border-radius: 10px;
     }
     
     .stTabs [data-baseweb="tab"] {
-        background-color: rgba(255, 255, 255, 0.1);
-        color: white;
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
         border-radius: 8px;
         margin: 2px;
     }
     
     .stTabs [aria-selected="true"] {
-        background-color: rgba(255, 255, 255, 0.3);
+        background-color: rgba(255, 255, 255, 0.3) !important;
+        color: white !important;
+    }
+    
+    /* Additional overrides for stubborn white backgrounds */
+    div[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%) !important;
+    }
+    
+    div[data-testid="stSidebar"] > div {
+        background: transparent !important;
+    }
+    
+    /* Text color overrides */
+    .stMarkdown, .stText {
+        color: white !important;
+    }
+    
+    /* Dataframe styling */
+    .stDataFrame {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border-radius: 10px;
+        overflow: hidden;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -177,7 +219,7 @@ def load_building_data(file_path):
             'max_power': heat_power.max(),
             'avg_power': heat_power.mean(),
             'min_power': heat_power.min(),
-            'annual_consumption': np.trapz(heat_power, time) / 3600 / 1000,
+            'annual_consumption': np.trapezoid(heat_power, time) / 3600 / 1000,
             'max_temp': indoor_temp.max(),
             'avg_temp': indoor_temp.mean(),
             'min_temp': indoor_temp.min(),
@@ -262,7 +304,7 @@ with st.sidebar:
 # Main dashboard content
 if selected_files:
     
-    # Loaddata for all selected buildings
+    # Load data for all selected buildings
     building_data = {}
     building_stats = {}
     
