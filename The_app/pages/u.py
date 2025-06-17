@@ -419,10 +419,13 @@ def main():
                                     finally:
                                         # Clean up post-renovation temp file
                                         try:
-                                            if post_file_path and os.path.exists(post_file_path):
+                                            if post_file_path:
                                                 os.unlink(post_file_path)
+                                                temp_dir = os.path.dirname(post_file_path)
+                                                if temp_dir.startswith('/tmp'):
+                                                    shutil.rmtree(temp_dir, ignore_errors=True)
                                         except:
-                                            pass  # Silently ignore cleanup errors for post-renovation file
+                                            pass
                                 else:
                                     st.error("❌ Failed to download or access post-renovation file")
                             else:
@@ -464,13 +467,13 @@ def main():
                     finally:
                         # Clean up temporary file
                         try:
-                            if pre_file_path and os.path.exists(pre_file_path):
+                            if pre_file_path:
                                 os.unlink(pre_file_path)
-                                st.info("✅ Cleaned up temporary file")
+                                temp_dir = os.path.dirname(pre_file_path)
+                                if temp_dir.startswith('/tmp'):
+                                    shutil.rmtree(temp_dir, ignore_errors=True)
                         except Exception as cleanup_error:
-                            # Only show warning if it's not just "file not found"
-                            if "No such file or directory" not in str(cleanup_error):
-                                st.warning(f"Could not clean up temporary file: {cleanup_error}")
+                            st.warning(f"Could not clean up temporary file: {cleanup_error}")
                 else:
                     st.error("❌ Failed to download pre-renovation file from GCS")
             else:
