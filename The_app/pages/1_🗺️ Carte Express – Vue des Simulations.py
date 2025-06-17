@@ -225,9 +225,9 @@ def main():
             simulation_building_ids, mat_files = get_building_ids_from_gcs(client, bucket)
         
         # Debug: Show some sample IDs for comparison
-        with st.expander("🔍 Debug Info"):
-            st.write(f"Sample shapefile IDs: {gdf['object_id_clean'].head(3).tolist()}")
-            st.write(f"Sample simulation IDs: {simulation_building_ids[:3] if simulation_building_ids else 'None found'}")
+        # with st.expander("🔍 Debug Info"):
+        #     st.write(f"Sample shapefile IDs: {gdf['object_id_clean'].head(3).tolist()}")
+        #     st.write(f"Sample simulation IDs: {simulation_building_ids[:3] if simulation_building_ids else 'None found'}")
         
         # Add simulation availability to the dataframe
         gdf['has_simulation'] = gdf['object_id_clean'].isin(simulation_building_ids)
