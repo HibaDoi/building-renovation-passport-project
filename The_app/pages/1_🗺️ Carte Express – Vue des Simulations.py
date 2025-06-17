@@ -349,9 +349,7 @@ def main():
                         <span style="display: inline-block; width: 15px; height: 15px; background-color: #ff6b6b; margin-right: 8px;"></span>
                         <span>Selected Building</span>
                     </div>
-                    <div style="margin-top: 10px; font-size: 10px; color: #666;">
-                        Coverage: {coverage_percent:.1f}%
-                    </div>
+                    
                     </div>
                     '''
                     m.get_root().html.add_child(folium.Element(legend_html))
