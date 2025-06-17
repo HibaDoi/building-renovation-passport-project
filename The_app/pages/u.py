@@ -23,39 +23,29 @@ st.set_page_config(
 # Improved Function to download file from GCS
 @st.cache_data
 def download_file_from_gcs(blob_name):
-    """Download file from Google Cloud Storage to temporary location with better error handling"""
+    """Download file from Google Cloud Storage to temporary location"""
     try:
         blob = bucket.blob(blob_name)
         
-        # Check if blob exists
-        if not blob.exists():
-            st.error(f"File {blob_name} does not exist in GCS bucket")
-            return None
+        # Create temporary file with proper extension
+        file_extension = os.path.splitext(blob_name)[1] or '.mat'
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=file_extension)
+        temp_file.close()  # Close the file so it can be written to
         
-        # Get blob info
-        blob.reload()  # Refresh blob metadata
-        st.info(f"Found blob: {blob_name}, Size: {blob.size} bytes")
+        # Download to the temporary file
+        blob.download_to_filename(temp_file.name)
         
-        # Create temp directory and file
-        temp_dir = tempfile.mkdtemp()
-        temp_file_path = os.path.join(temp_dir, os.path.basename(blob_name))
-        
-        # Download the blob
-        with open(temp_file_path, 'wb') as f:
-            blob.download_to_file(f)
-        
-        # Verify download
-        if os.path.exists(temp_file_path) and os.path.getsize(temp_file_path) > 0:
-            st.success(f"Successfully downloaded to {temp_file_path} ({os.path.getsize(temp_file_path)} bytes)")
-            return temp_file_path
+        # Verify file was downloaded and has content
+        if os.path.exists(temp_file.name) and os.path.getsize(temp_file.name) > 0:
+            st.success(f"Successfully downloaded {blob_name} ({os.path.getsize(temp_file.name)} bytes)")
+            return temp_file.name
         else:
-            st.error("File download failed or file is empty")
+            st.error(f"Downloaded file {blob_name} is empty or doesn't exist")
             return None
             
     except Exception as e:
         st.error(f"Error downloading {blob_name}: {str(e)}")
         st.error(f"Error type: {type(e).__name__}")
-        st.error(f"Full traceback: {traceback.format_exc()}")
         return None
 
 #################################################
