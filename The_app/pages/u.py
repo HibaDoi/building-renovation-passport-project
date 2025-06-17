@@ -90,7 +90,7 @@ def load_shapefile_from_gcs(blob_prefix, bucket):
             if blob.exists():
                 local_path = os.path.join(temp_dir, f"temp{ext}")
                 blob.download_to_filename(local_path)
-                st.info(f"Downloaded {blob_name}")
+                # st.info(f"Downloaded {blob_name}")
             else:
                 st.warning(f"Shapefile component {blob_name} not found")
         
