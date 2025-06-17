@@ -448,7 +448,7 @@ def main():
                         building_data = selected_building.iloc[0]
                         has_simulation = building_data['has_simulation']
                         
-                        st.markdown(f"### 🏢 Building: `{building_id}`")
+                        st.markdown(f"### 🏢 Building: ")
                         st.markdown(f"**Building Number:** `{building_number}`")
                         
                         # Simulation status with prominent display
