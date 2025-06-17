@@ -537,8 +537,6 @@ def main():
                                     with prop_col2:
                                         if 'roof_h_typ' in building_props:
                                             st.metric("Roof Height", f"{building_props['roof_h_typ']:.1f} m")
-                                        if 'ground_lvl' in building_props:
-                                            st.metric("Ground Level", f"{building_props['ground_lvl']:.1f} m")
                                         if 'footprint_area_m2' in building_props:
                                             st.metric("Area", f"{building_props['footprint_area_m2']:.1f} m²")
                                     
