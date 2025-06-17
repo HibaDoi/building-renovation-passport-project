@@ -85,7 +85,7 @@ def get_building_ids_from_gcs(_client, _bucket, mat_prefix="simulation/"):
                 full_building_id = f"NL.IMBAG.Pand.{building_id_number}"
                 building_ids.append(full_building_id)
         
-        st.info(f"🔍 Found {len(building_ids)} simulation files in GCS")
+        st.sidebar.info(f"🔍 Found {len(building_ids)} simulation files in GCS")
         if len(building_ids) > 0:
             print(f"Sample IDs: {building_ids[:3]}...")
         
