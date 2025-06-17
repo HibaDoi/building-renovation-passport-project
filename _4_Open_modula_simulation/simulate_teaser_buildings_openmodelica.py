@@ -67,7 +67,7 @@ class TeaserSimulatorImproved:
         try:
             self.logger.info("Connexion à OpenModelica...")
             self.omc = OMCSessionZMQ()
-            
+            self.omc.sendExpression('setCommandLineOptions("-j=6")')
             version = self.omc.sendExpression("getVersion()")
             self.logger.info(f"OpenModelica version: {version}")
             
@@ -437,7 +437,7 @@ def main():
     # Configuration
     PACKAGE_PATH = r"C:/Users/hp/TEASEROutput/Project/package.mo"
     AIXLIB_PATH = r"C:/AixLib-main/AixLib-main/AixLib/package.mo"
-    OUTPUT_DIR = r"Open_modula_maybe/simulation_results"
+    OUTPUT_DIR = r"_4_Open_modula_simulation/simulation_results"
     
     # Vérifications
     if not Path(PACKAGE_PATH).exists():

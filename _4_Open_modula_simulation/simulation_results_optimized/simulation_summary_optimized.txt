@@ -1,0 +1,20 @@
+RÉSUMÉ DES SIMULATIONS TEASER OPTIMISÉES
+============================================================
+
+Total simulations: 10
+Succès: 0
+Échecs: 10
+Taux de succès: 0.0%
+
+DÉTAIL PAR BÂTIMENT:
+----------------------------------------
+NL_Building_0503100000000010: ÉCHEC
+NL_Building_0503100000000030: ÉCHEC
+NL_Building_0503100000000137: ÉCHEC
+NL_Building_0503100000000139: ÉCHEC
+NL_Building_0503100000000140: ÉCHEC
+NL_Building_0503100000000141: ÉCHEC
+NL_Building_0503100000000291: ÉCHEC
+NL_Building_0503100000004389: ÉCHEC
+NL_Building_0503100000004390: ÉCHEC
+NL_Building_0503100000004396: ÉCHEC

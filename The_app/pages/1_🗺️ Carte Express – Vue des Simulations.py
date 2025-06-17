@@ -542,6 +542,8 @@ def main():
                                             st.metric("Roof Height", f"{building_props['roof_h_typ']:.1f} m")
                                         if 'ground_lvl' in building_props:
                                             st.metric("Ground Level", f"{building_props['ground_lvl']:.1f} m")
+                                        if 'footprint_area_m2' in building_props:
+                                            st.metric("Area", f"{building_props['footprint_area_m2']:.1f} m²")
                                     
                                     with st.expander("🔍 All Properties"):
                                         st.json(building_props)
