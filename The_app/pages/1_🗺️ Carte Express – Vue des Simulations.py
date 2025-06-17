@@ -499,16 +499,14 @@ def main():
                         
                         col1, col2 = st.columns(2)
                         with col1:
-                            st.markdown("**Identification:**")
-                            st.write(f"- **Clean ID:** {building_data['object_id_clean']}")
-                            st.write(f"- **Original ID:** {building_data['object_id']}")
-                        
-                        with col2:
                             st.markdown("**Geometry:**")
                             centroid = building_data.geometry.centroid
                             st.write(f"- **Lat:** {centroid.y:.6f}")
+                        
+                        with col2:
+                            
                             st.write(f"- **Lng:** {centroid.x:.6f}")
-                            st.write(f"- **Area:** {building_data.geometry.area:.8f}")
+                            
                         
                         # Try to load additional building properties
                         try:
