@@ -24,28 +24,43 @@ st.set_page_config(
 @st.cache_data
 def download_file_from_gcs(blob_name):
     """Download file from Google Cloud Storage to temporary location"""
+    temp_file_path = None
     try:
         blob = bucket.blob(blob_name)
         
-        # Create temporary file with proper extension
+        # Create a temporary directory to ensure clean file handling
+        temp_dir = tempfile.mkdtemp()
+        
+        # Create temporary file path with proper extension
         file_extension = os.path.splitext(blob_name)[1] or '.mat'
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=file_extension)
-        temp_file.close()  # Close the file so it can be written to
+        temp_file_path = os.path.join(temp_dir, f"downloaded{file_extension}")
         
         # Download to the temporary file
-        blob.download_to_filename(temp_file.name)
+        blob.download_to_filename(temp_file_path)
         
         # Verify file was downloaded and has content
-        if os.path.exists(temp_file.name) and os.path.getsize(temp_file.name) > 0:
-            st.success(f"Successfully downloaded {blob_name} ({os.path.getsize(temp_file.name)} bytes)")
-            return temp_file.name
+        if os.path.exists(temp_file_path) and os.path.getsize(temp_file_path) > 0:
+            st.success(f"Successfully downloaded {blob_name} ({os.path.getsize(temp_file_path)} bytes)")
+            return temp_file_path
         else:
             st.error(f"Downloaded file {blob_name} is empty or doesn't exist")
+            # Clean up on failure
+            if os.path.exists(temp_file_path):
+                os.unlink(temp_file_path)
+            shutil.rmtree(temp_dir, ignore_errors=True)
             return None
             
     except Exception as e:
         st.error(f"Error downloading {blob_name}: {str(e)}")
         st.error(f"Error type: {type(e).__name__}")
+        st.error(f"Traceback: {traceback.format_exc()}")
+        # Clean up on error
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.unlink(temp_file_path)
+                shutil.rmtree(os.path.dirname(temp_file_path), ignore_errors=True)
+            except:
+                pass
         return None
 
 #################################################
@@ -176,6 +191,27 @@ def load_json_from_gcs(blob_name, bucket):
         st.error(f"Error loading JSON from {blob_name}: {str(e)}")
         return None
 
+def safe_cleanup_temp_file(file_path):
+    """Safely clean up temporary files"""
+    if file_path and os.path.exists(file_path):
+        try:
+            # Get the directory
+            temp_dir = os.path.dirname(file_path)
+            
+            # Remove the file
+            os.unlink(file_path)
+            
+            # Remove the directory if it's in /tmp and empty
+            if temp_dir.startswith(tempfile.gettempdir()) and os.path.exists(temp_dir):
+                try:
+                    # This will only work if directory is empty
+                    os.rmdir(temp_dir)
+                except OSError:
+                    # Directory not empty or other error - that's okay
+                    pass
+        except Exception as e:
+            st.warning(f"Could not clean up temporary file: {e}")
+
 # Main App
 def main():
     st.title("🗺️ Building Analysis Dashboard")
@@ -290,30 +326,31 @@ def main():
 
         # Find the specific file for pre-renovation
         building_id = "0503100000019674"
-        target_filename = f"{building_id}_result.mat"
+        target_filename = f"simulation/NL_Building_{building_id}_result.mat"
+
+        # Initialize file paths
+        pre_file_path = None
+        post_file_path = None
 
         try:
-            # Filter to find your specific file
-            mat_blobs_list = list(client.list_blobs(bucket, prefix="simulation/"))
-            matching_blobs = [blob for blob in mat_blobs_list if blob.name.endswith(target_filename)]
+            # Try to import buildingspy first
+            try:
+                from buildingspy.io.outputfile import Reader
+            except ImportError:
+                st.error("❌ buildingspy library not found. Install it with: `pip install buildingspy`")
+                st.info("Alternative: You can manually install it in your environment")
+                return
 
-            if matching_blobs:
-                file_blob = matching_blobs[0]
-                st.success(f"✅ Found pre-renovation file: {file_blob.name}")
+            # Check if the pre-renovation file exists
+            blob = bucket.blob(target_filename)
+            if blob.exists():
+                st.success(f"✅ Found pre-renovation file: {target_filename}")
                 
                 # Download the file to local temp location
-                pre_file_path = download_file_from_gcs(file_blob.name)
+                pre_file_path = download_file_from_gcs(target_filename)
                 
                 if pre_file_path and os.path.exists(pre_file_path):
                     try:
-                        # Try to import buildingspy
-                        try:
-                            from buildingspy.io.outputfile import Reader
-                        except ImportError:
-                            st.error("❌ buildingspy library not found. Install it with: `pip install buildingspy`")
-                            st.info("Alternative: You can manually install it in your environment")
-                            return
-                        
                         # Load .mat file
                         st.info(f"📂 Loading .mat file from: {os.path.basename(pre_file_path)}")
                         r = Reader(pre_file_path, "dymola")
@@ -365,17 +402,15 @@ def main():
                         with col2:
                             # Find the post-renovation file
                             post_building_id = "0503100000013392"
-                            post_target_filename = f"{post_building_id}_result.mat"
+                            post_target_filename = f"simulation/NL_Building_{post_building_id}_result.mat"
 
-                            # Filter to find post-renovation file
-                            post_matching_blobs = [blob for blob in mat_blobs_list if blob.name.endswith(post_target_filename)]
-
-                            if post_matching_blobs:
-                                post_file_blob = post_matching_blobs[0]
-                                st.success(f"✅ Found post-renovation file: {post_file_blob.name}")
+                            # Check if post-renovation file exists
+                            post_blob = bucket.blob(post_target_filename)
+                            if post_blob.exists():
+                                st.success(f"✅ Found post-renovation file: {post_target_filename}")
                                 
                                 # Download the post-renovation file
-                                post_file_path = download_file_from_gcs(post_file_blob.name)
+                                post_file_path = download_file_from_gcs(post_target_filename)
                                 
                                 if post_file_path and os.path.exists(post_file_path):
                                     try:
@@ -416,16 +451,7 @@ def main():
                                         
                                     except Exception as e:
                                         st.error(f"Error processing post-renovation data: {str(e)}")
-                                    finally:
-                                        # Clean up post-renovation temp file
-                                        try:
-                                            if post_file_path:
-                                                os.unlink(post_file_path)
-                                                temp_dir = os.path.dirname(post_file_path)
-                                                if temp_dir.startswith('/tmp'):
-                                                    shutil.rmtree(temp_dir, ignore_errors=True)
-                                        except:
-                                            pass
+                                        st.error(f"Traceback: {traceback.format_exc()}")
                                 else:
                                     st.error("❌ Failed to download or access post-renovation file")
                             else:
@@ -464,32 +490,19 @@ def main():
                     except Exception as e:
                         st.error(f"❌ Error processing energy data: {str(e)}")
                         st.error(f"Full error details: {traceback.format_exc()}")
-                    finally:
-                        # Clean up temporary file
-                        try:
-                            if pre_file_path:
-                                os.unlink(pre_file_path)
-                                temp_dir = os.path.dirname(pre_file_path)
-                                if temp_dir.startswith('/tmp'):
-                                    shutil.rmtree(temp_dir, ignore_errors=True)
-                        except Exception as cleanup_error:
-                            st.warning(f"Could not clean up temporary file: {cleanup_error}")
                 else:
                     st.error("❌ Failed to download pre-renovation file from GCS")
             else:
                 st.warning(f"📂 No energy data found for building {building_id}")
-                st.info(f"Expected file pattern: *{target_filename}")
+                st.info(f"Expected file: {target_filename}")
                 
-                # Show what files are actually available
-                available_files = [blob.name for blob in mat_blobs_list if blob.name.endswith('.mat')][:10]
-                if available_files:
-                    st.info("Available .mat files (first 10):")
-                    for file in available_files:
-                        st.write(f"- {file}")
-                        
         except Exception as e:
             st.error(f"❌ Error in energy analysis: {str(e)}")
             st.error(f"Full traceback: {traceback.format_exc()}")
+        finally:
+            # Clean up temporary files
+            safe_cleanup_temp_file(pre_file_path)
+            safe_cleanup_temp_file(post_file_path)
     
     # Footer
     st.markdown("---")
