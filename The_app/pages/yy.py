@@ -45,8 +45,8 @@ def annual_kwh(time_month, q_w):
 # 4. Interface minimaliste
 st.title("📊 Comparaison rapide de deux fichiers .mat")
 
-path_a = st.text_input("Chemin GCS du fichier A", "simulation/NL_Building_0503100000019674_result.mat")
-path_b = st.text_input("Chemin GCS du fichier B", "simulation/NL_Building_0503100000013392_result.mat")
+path_a = st.text_input("Chemin GCS du fichier A", "before_after_insulation/ResidentialBuilding_res.mat")
+path_b = st.text_input("Chemin GCS du fichier B", "before_after_insulation/without_insulation.mat")
 
 if st.button("Comparer") and path_a and path_b:
     try:
