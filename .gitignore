@@ -29,6 +29,8 @@
 *.laz
 *.LAZ
 *.las
+*.qmd
+*.geojson
 AixLib-main/
 IfcOpenShell-db44eaf2216cfd29bc98a18d84ef3eef55273d7d/
 ArchetypeExample/
