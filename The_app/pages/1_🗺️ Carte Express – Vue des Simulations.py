@@ -87,7 +87,7 @@ def get_building_ids_from_gcs(_client, _bucket, mat_prefix="simulation/"):
         
         st.info(f"🔍 Found {len(building_ids)} simulation files in GCS")
         if len(building_ids) > 0:
-            st.write(f"Sample IDs: {building_ids[:3]}...")
+            print(f"Sample IDs: {building_ids[:3]}...")
         
         return building_ids, mat_files
     except Exception as e:
