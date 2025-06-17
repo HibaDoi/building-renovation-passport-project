@@ -18,7 +18,7 @@ st.set_page_config(
     page_icon="🗺️",
     layout="wide"
 )
-st.write("heeeeeeeeeeeeeeeeeeeeeeeeeeey")
+
 ##################################################
 # Improved Function to download file from GCS
 @st.cache_data
@@ -46,7 +46,7 @@ def download_file_from_gcs(blob_name):
         
         # Verify download
         if os.path.exists(temp_file_path) and os.path.getsize(temp_file_path) > 0:
-            st.success(f"Successfully downloaded to {temp_file_path} ({os.path.getsize(temp_file_path)} bytes)")
+            
             return temp_file_path
         else:
             st.error("File download failed or file is empty")
@@ -180,7 +180,7 @@ def load_json_from_gcs(blob_name, bucket):
             
         json_string = blob.download_as_text()
         data = json.loads(json_string)
-        st.success(f"✅ Loaded JSON data from {blob_name}")
+        
         return data
     except Exception as e:
         st.error(f"Error loading JSON from {blob_name}: {str(e)}")
@@ -309,7 +309,7 @@ def main():
 
             if matching_blobs:
                 file_blob = matching_blobs[0]
-                st.success(f"✅ Found pre-renovation file: {file_blob.name}")
+                
                 
                 # Download the file to local temp location
                 pre_file_path = download_file_from_gcs(file_blob.name)
@@ -382,7 +382,7 @@ def main():
 
                             if post_matching_blobs:
                                 post_file_blob = post_matching_blobs[0]
-                                st.success(f"✅ Found post-renovation file: {post_file_blob.name}")
+                                
                                 
                                 # Download the post-renovation file
                                 post_file_path = download_file_from_gcs(post_file_blob.name)
