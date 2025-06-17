@@ -20,7 +20,7 @@ st.set_page_config(
 )
 ##################################################
 # Function to download file from GCS
-@st.cache_data
+
 def download_file_from_gcs(blob_name):
     """Download file from Google Cloud Storage to temporary location"""
     try:
