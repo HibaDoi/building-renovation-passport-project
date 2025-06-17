@@ -40,7 +40,7 @@ def download_file_from_gcs(blob_name):
         
         # Verify file was downloaded and has content
         if os.path.exists(temp_file_path) and os.path.getsize(temp_file_path) > 0:
-            st.success(f"Successfully downloaded {blob_name} ({os.path.getsize(temp_file_path)} bytes)")
+            print(f"Successfully downloaded {blob_name} ({os.path.getsize(temp_file_path)} bytes)")
             return temp_file_path
         else:
             st.error(f"Downloaded file {blob_name} is empty or doesn't exist")
