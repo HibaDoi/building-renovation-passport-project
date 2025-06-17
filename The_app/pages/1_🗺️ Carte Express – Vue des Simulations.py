@@ -238,14 +238,14 @@ def main():
         coverage_percent = (buildings_with_sim / total_buildings * 100) if total_buildings > 0 else 0
         
         # Display statistics
-        st.markdown("### 📊 Building Coverage Statistics")
+        st.sidebar.markdown("### 📊 Building Coverage Statistics")
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Total Buildings", f"{total_buildings:,}")
+            st.sidebar.metric("Total Buildings", f"{total_buildings:,}")
         with col2:
-            st.metric("With Simulations", f"{buildings_with_sim:,}")
+            st.sidebar.metric("With Simulations", f"{buildings_with_sim:,}")
         with col3:
-            st.metric("Coverage", f"{coverage_percent:.1f}%")
+            st.sidebar.metric("Coverage", f"{coverage_percent:.1f}%")
         
         st.markdown("---")
         
