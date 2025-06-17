@@ -366,9 +366,9 @@ def main():
                     # Process click events - Improved click detection
                     clicked_building_id = None
                     
-                    # Debug the map data
-                    with st.expander("🐛 Debug: Map Click Data"):
-                        st.write("Map data:", map_data)
+                    # # Debug the map data
+                    # with st.expander("🐛 Debug: Map Click Data"):
+                    #     st.write("Map data:", map_data)
                     
                     # Method 1: Try popup data first
                     if map_data and 'last_object_clicked_popup' in map_data and map_data['last_object_clicked_popup']:
