@@ -460,17 +460,17 @@ def main():
                             mat_file_pattern = f"NL_Building_{building_number}_result.mat"
                             matching_files = [f for f in mat_files if f.endswith(mat_file_pattern)]
                             
-                            # Debug info
-                            with st.expander("🔍 Debug: Simulation File Info"):
-                                st.write(f"Looking for pattern: `{mat_file_pattern}`")
-                                st.write(f"Building number: `{building_number}`")
-                                st.write(f"Found {len(matching_files)} matching files")
-                                if matching_files:
-                                    st.write(f"Matching file: `{matching_files[0]}`")
-                                else:
-                                    st.write("Available .mat files (first 5):")
-                                    for i, f in enumerate(mat_files[:5]):
-                                        st.write(f"  {i+1}. `{f}`")
+                            # # Debug info
+                            # with st.expander("🔍 Debug: Simulation File Info"):
+                            #     st.write(f"Looking for pattern: `{mat_file_pattern}`")
+                            #     st.write(f"Building number: `{building_number}`")
+                            #     st.write(f"Found {len(matching_files)} matching files")
+                            #     if matching_files:
+                            #         st.write(f"Matching file: `{matching_files[0]}`")
+                            #     else:
+                            #         st.write("Available .mat files (first 5):")
+                            #         for i, f in enumerate(mat_files[:5]):
+                            #             st.write(f"  {i+1}. `{f}`")
                             
                             # Always show the button, even if file not found
                             st.markdown("### 🔥 Energy Analysis")
