@@ -499,7 +499,6 @@ def main():
                         
                         col1, col2 = st.columns(2)
                         with col1:
-                            st.markdown("**Geometry:**")
                             centroid = building_data.geometry.centroid
                             st.write(f"- **Lat:** {centroid.y:.6f}")
                         
