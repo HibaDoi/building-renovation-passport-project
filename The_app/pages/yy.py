@@ -59,7 +59,7 @@ if st.button("Comparer") and path_a and path_b:
 
         # ── Graphique
         fig, ax = plt.subplots(figsize=(9,5))
-        ax.plot(t_a, q_a, lw=2, label=os.path.basename(path_a))
+        # ax.plot(t_a, q_a, lw=2, label=os.path.basename(path_a))
         ax.plot(t_b, q_b, lw=2, label=os.path.basename(path_b))
         ax.set_xticks(np.arange(1,13)); ax.set_xlabel("Mois")
         ax.set_ylabel("Puissance (W)")
