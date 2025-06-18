@@ -560,15 +560,15 @@ def main():
                     st.write(f"- **Coverage:** {coverage_percent:.1f}%")
                     
                     # Show some example building IDs
-                    if buildings_with_sim > 0:
-                        st.markdown("### 🏢 Sample Buildings with Simulations")
-                        sample_buildings = gdf[gdf['has_simulation']]['object_id_clean'].head(5).tolist()
-                        for i, building in enumerate(sample_buildings, 1):
-                            building_num = building.replace('NL.IMBAG.Pand.', '')
-                            st.write(f"{i}. `{building}` → Number: `{building_num}`")
+                    # if buildings_with_sim > 0:
+                    #     st.markdown("### 🏢 Sample Buildings with Simulations")
+                    #     sample_buildings = gdf[gdf['has_simulation']]['object_id_clean'].head(5).tolist()
+                    #     for i, building in enumerate(sample_buildings, 1):
+                    #         building_num = building.replace('NL.IMBAG.Pand.', '')
+                    #         st.write(f"{i}. `{building}` → Number: `{building_num}`")
                         
-                        if buildings_with_sim > 5:
-                            st.write(f"... and {buildings_with_sim - 5} more")
+                    #     if buildings_with_sim > 5:
+                    #         st.write(f"... and {buildings_with_sim - 5} more")
         
         with tab2:
             st.header("📊 Energy Analysis")
