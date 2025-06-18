@@ -74,6 +74,7 @@ def get_building_ids_from_gcs(_client, _bucket, mat_prefix="simulation/"):
     try:
         mat_blobs = list(_client.list_blobs(_bucket, prefix=mat_prefix))
         mat_files = [blob.name for blob in mat_blobs if blob.name.endswith("_result.mat")]
+        print(len(mat_files))
         building_ids = []
         
         for f in mat_files:
