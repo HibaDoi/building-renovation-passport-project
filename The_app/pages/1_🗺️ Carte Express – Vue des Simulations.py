@@ -311,7 +311,6 @@ def main():
                                 {'✅ Available' if has_simulation else '❌ Not Available'}
                             </span><br>
                             <b>Coordinates:</b> {centroid.y:.6f}, {centroid.x:.6f}<br>
-                            <b>Building Area:</b> {row.geometry.area:.8f} sq units
                         </div>
                         """
                         
