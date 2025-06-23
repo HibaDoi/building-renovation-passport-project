@@ -268,7 +268,7 @@ def analyze_all_surfaces(cityjson_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     city_objects = cityjson_data.get('CityObjects', {})
     results = []
     
-    print(f"\n=== ANALYZING {len(city_objects)} CITY OBJECTS ===")
+    print(f"\n==== ANALYZING {len(city_objects)} CITY OBJECTS ===")
     
     for obj_id, obj_data in city_objects.items():
         obj_type = obj_data.get('type', '')
